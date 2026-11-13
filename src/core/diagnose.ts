@@ -20,7 +20,7 @@ function alternatives(items:Status[]):Status{
 export function diagnose(rawIntent:TaskIntent,snapshot:SessionSnapshot,now=Date.now()):Report {
   const intent=parseIntent(rawIntent);
   const checks:CapabilityResult[]=intent.requirements.map(req=>{
-    const fact=snapshot.facts[req.capability];
+    const fact=snapshot.facts[req.server?req.capability+':'+req.server:req.capability];
     const availability=snapshot.scope==='step'?(fact?.availability??'unknown'):'unknown';
     const preconditions=fact?.preconditions??'unknown';
     const probe=fact?.probe;

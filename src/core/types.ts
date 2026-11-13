@@ -18,7 +18,7 @@ export interface SessionSnapshot {
   route: ModelRoute | null; cwd?: string;
   sandbox: 'read-only' | 'workspace-write' | 'danger-full-access' | 'unknown';
   approval: 'ask' | 'never' | 'unknown';
-  facts: Partial<Record<Capability,CapabilityFact>>;
+  facts: Partial<Record<string,CapabilityFact>>;
 }
 export interface NextStep { id: string; label: string; kind: 'prepare' | 'probe' | 'manual' }
 export interface CapabilityResult {
