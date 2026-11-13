@@ -284,3 +284,27 @@ test('a template with conflicting explicit requirements is refused instead of si
   const ok = (await f.check.execute({ template: 'images', title: 'ignored but harmless', files: ['photo.png'] }, execFor(f.agent, 'readiness_check'))) as Record<string, unknown>;
   assert.equal((ok.checks as Array<Record<string, unknown>>).length, 2);
 });
+test('two sessions share one plugin instance without mixing reports, options or actions', async () => {
+  const f = await ready();
+  const other = { id: 'session-b', ctx: f.host, session: { header: {} } };
+  const execA = (name: string) => execFor(f.agent, name);
+  const execB = (name: string) => execFor(other, name);
+  const [reportA, reportB] = await Promise.all([
+    f.check.execute({ title: 'Session A', requirements: [{ id: 'r', capability: 'files.read' }], files: ['a.txt'] }, execA('readiness_check')),
+    f.check.execute({ title: 'Session B', requirements: [{ id: 'out', capability: 'files.write' }], outputDirectory: '/work/b' }, execB('readiness_check')),
+  ]) as Array<Record<string, unknown>>;
+  assert.notEqual(reportA.id, reportB.id);
+  const [runA, runB] = await Promise.all([
+    f.probe.execute({ reportId: reportA.id, requirementId: 'r', mode: 'run' }, execA('readiness_probe')),
+    f.remedy.execute({ reportId: reportB.id, actionId: 'set-output', value: '/work/b2', expectedOptionsRevision: 0, mode: 'run' }, execB('readiness_remedy')),
+  ]) as Array<Record<string, unknown>>;
+  assert.equal(runA.status, 'succeeded');
+  assert.equal(runB.status, 'succeeded');
+  assert.equal(f.calls.approvals, 2);
+  const listA = (await f.commands.get('readiness-list')!.handler({ agent: { id: 'session-a' }, rawInput: '' })) as { text?: string };
+  const listB = (await f.commands.get('readiness-list')!.handler({ agent: { id: 'session-b' }, rawInput: '' })) as { text?: string };
+  assert.ok((listA.text ?? '').includes(String(reportA.id)), 'session A must list its own report');
+  assert.ok(!(listA.text ?? '').includes(String(reportB.id)), 'session A must not list session B reports');
+  assert.ok((listB.text ?? '').includes(String(reportB.id)), 'session B must list its own report');
+  assert.ok(!(listB.text ?? '').includes(String(reportA.id)), 'session B must not list session A reports');
+});
