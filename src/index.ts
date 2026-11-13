@@ -3,6 +3,7 @@ import type { ActionJournal, JournalEvent } from './core/actions.ts';
 import type { JournalRecord } from './core/journal.ts';
 import { LABELS, STATUS_LABELS } from './core/messages.ts';
 import { modelReport } from './core/privacy.ts';
+import { TEMPLATE_IDS, templateIntent } from './core/intent.ts';
 import { CAPABILITIES, ReadinessError } from './core/types.ts';
 import type { Capability, ModelRoute, Report } from './core/types.ts';
 import { openDurableJournal } from './host/journal-domain.ts';
@@ -54,8 +55,9 @@ async function openJournal(ctx: HostContext): Promise<JournalHandle> {
   return { journal: new UnavailableJournal(), close: async () => { await Promise.resolve(); } };
 }
 const CHECK_PARAMETERS = {
-  title: { type: 'string', required: true, description: 'One-line task name; no confidential detail.' },
-  requirements: { type: 'array', required: true, items: { type: 'object', additionalProperties: false, properties: { id: { type: 'string', required: true }, capability: { type: 'string', required: true, enum: [...CAPABILITIES] }, server: { type: 'string' } } } },
+  title: { type: 'string', description: 'One-line task name; no confidential detail. Required unless a template is used.' },
+  template: { type: 'string', enum: [...TEMPLATE_IDS], description: 'Built-in task template; replaces title and requirements.' },
+  requirements: { type: 'array', items: { type: 'object', additionalProperties: false, properties: { id: { type: 'string', required: true }, capability: { type: 'string', required: true, enum: [...CAPABILITIES] }, server: { type: 'string' } } } },
   routes: { type: 'array', items: { type: 'object', additionalProperties: false, properties: { id: { type: 'string', required: true }, requires: { type: 'array', required: true, items: { type: 'string' } } } } },
   files: { type: 'array', items: { type: 'string' } },
   outputDirectory: { type: 'string' },
@@ -123,6 +125,10 @@ function probeOptions(report: Report) {
 function body(args: unknown): Record<string, unknown> { return record(args); }
 /** Return a canonical tool value: the executor validates it against the declared output schema. */
 function canonical<T>(value: unknown): T { return value as T; }
+function requiredRequirements(source: Record<string, unknown>): unknown {
+  if (!Array.isArray(source.requirements) || source.requirements.length === 0) throw new ReadinessError('INVALID_INTENT', '需要 requirements 或 template');
+  return source.requirements;
+}
 function requiredString(source: Record<string, unknown>, key: string): string {
   const value = source[key];
   if (typeof value !== 'string' || !value.trim()) throw new ReadinessError('INVALID_INTENT', '缺少参数：' + key);
@@ -168,21 +174,19 @@ export async function apply(ctx: PluginContext): Promise<void> {
   if (!tools) throw new ReadinessError('TOOL_REGISTRY_UNAVAILABLE', '工具注册服务不可用');
   tools.register(defineTool({
     name: 'readiness_check',
-    description: '只读检查当前会话能否开始一项任务：本轮工具准入、模型路由、工作目录、写入边界、文档引擎与 MCP 可见性，给出逐项状态、依据和下一步。不执行任务、不联网测试、不改配置。',
+    description: '只读检查当前会话能否开始一项任务：本轮工具准入、模型路由、工作目录、写入边界、文档引擎与 MCP 可见性，给出逐项状态、依据和下一步。可用 requirements 表达自然语言任务的能力要求，也可用内置 template。不执行任务、不联网测试、不改配置。',
     parameters: CHECK_PARAMETERS,
     output: CHECK_OUTPUT,
     isConcurrencySafe: () => true,
     execute: async (args: unknown, exec) => {
       const input = body(args);
       const context = contextOf(exec, steps);
-      const report = await readiness.check(context, {
-        version: 1,
-        title: requiredString(input, 'title'),
-        requirements: input.requirements,
-        ...(input.routes === undefined ? {} : { routes: input.routes }),
-        files: Array.isArray(input.files) ? input.files : [],
-        ...(typeof input.outputDirectory === 'string' ? { outputDirectory: input.outputDirectory } : {}),
-      });
+      const files = Array.isArray(input.files) ? input.files : [];
+      const output = typeof input.outputDirectory === 'string' ? { outputDirectory: input.outputDirectory } : {};
+      const intent = typeof input.template === 'string'
+        ? { ...templateIntent(input.template), files, ...output }
+        : { version: 1, title: requiredString(input, 'title'), requirements: requiredRequirements(input), ...(input.routes === undefined ? {} : { routes: input.routes }), files, ...output };
+      const report = await readiness.check(context, intent);
       return canonical({ ...modelReport(report), probeOptions: probeOptions(report), unresolvedActions: journal.journal.list(context.agent.id).filter((row) => row.resultAt === undefined).length });
     },
   }));

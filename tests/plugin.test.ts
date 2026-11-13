@@ -171,3 +171,17 @@ test('the render projection explains the result without leaking session or paths
   assert.ok(!text.includes('/work'));
   assert.ok(!text.includes('notes.txt'));
 });
+
+test('a built-in template and an equivalent structured request reach the same diagnosis', async () => {
+  const f = await ready();
+  const templated = (await f.check.execute({ template: 'images', files: ['photo.png'] }, execFor(f.agent, 'readiness_check'))) as Record<string, unknown>;
+  const structured = (await f.check.execute({ title: '读取图片', requirements: [{ id: 'step1', capability: 'files.read' }, { id: 'step2', capability: 'image.inspect' }], files: ['photo.png'] }, execFor(f.agent, 'readiness_check'))) as Record<string, unknown>;
+  const shape = (report: Record<string, unknown>) => (report.checks as Array<Record<string, unknown>>).map((check) => [check.capability, check.status, check.availability, check.preconditions]);
+  assert.deepEqual(shape(templated), shape(structured));
+  assert.equal(templated.status, structured.status);
+});
+test('a check without requirements or a template is refused', async () => {
+  const f = await ready();
+  await assert.rejects(f.check.execute({ title: 'no requirements' }, execFor(f.agent, 'readiness_check')), { code: 'INVALID_INTENT' });
+  await assert.rejects(f.check.execute({ template: 'shell-anything' }, execFor(f.agent, 'readiness_check')));
+});
