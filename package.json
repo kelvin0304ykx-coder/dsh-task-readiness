@@ -1,0 +1,27 @@
+{
+  "name": "dsh-task-readiness",
+  "version": "0.1.0-preview.1",
+  "private": true,
+  "license": "UNLICENSED",
+  "description": "Session-scoped task readiness checks with evidence, controlled probes and safe next steps",
+  "type": "module",
+  "engines": {
+    "node": ">=24",
+    "dsh": "0.2.2-rc.2"
+  },
+  "scripts": {
+    "test": "node --test tests/*.test.ts",
+    "typecheck": "tsc --noEmit",
+    "build": "node scripts/build.mjs"
+  },
+  "devDependencies": {
+    "typescript": "6.0.3",
+    "esbuild": "0.28.2",
+    "@types/node": "24.13.3"
+  },
+  "files": [
+    "lib",
+    "cordis.patch.yml",
+    "README.md"
+  ]
+}
