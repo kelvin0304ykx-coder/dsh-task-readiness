@@ -5,7 +5,7 @@ import { ReadinessError } from './types.ts';
 import type { Capability, Report, SessionSnapshot } from './types.ts';
 export interface ActionOwner { sessionId:string; principal:'user'|'agent' }
 export type OutcomeStatus='succeeded'|'failed'|'cancelled'|'outcome_unknown';
-export type OutcomeCode='PROBE_PASSED'|'PROBE_FAILED'|'PROBE_CANCELLED'|'OUTCOME_UNKNOWN'|'NOT_SUPPORTED'|'OPTIONS_UPDATED'|'OPTIONS_RESTORED'|'JOURNAL_FAILED';
+export type OutcomeCode='PROBE_PASSED'|'PROBE_FAILED'|'PROBE_CANCELLED'|'PROBE_UNSUPPORTED'|'OUTCOME_UNKNOWN'|'NOT_SUPPORTED'|'OPTIONS_UPDATED'|'OPTIONS_RESTORED'|'JOURNAL_FAILED';
 export interface ExecutionOutcome {status:OutcomeStatus;code:OutcomeCode}
 export interface ActionReceipt extends ExecutionOutcome {id:string;planId:string;finishedAt:string;binding:string}
 export type ActionRequest={kind:'probe';probeId:Capability;requirementId:string}|{kind:'remedy';actionId:'set-output'|'choose-route'|'restore-options';value:string;expectedOptionsRevision:number};
@@ -51,7 +51,7 @@ function validOutcome(value:unknown):value is ExecutionOutcome {
   if(!value||typeof value!=='object')return false;
   const v=value as Record<string,unknown>;
   if(Object.keys(v).some(k=>!['status','code'].includes(k)))return false;
-  const allowed:Record<OutcomeStatus,string[]>={succeeded:['PROBE_PASSED','OPTIONS_UPDATED','OPTIONS_RESTORED'],failed:['PROBE_FAILED','NOT_SUPPORTED'],cancelled:['PROBE_CANCELLED'],outcome_unknown:['OUTCOME_UNKNOWN']};
+  const allowed:Record<OutcomeStatus,string[]>={succeeded:['PROBE_PASSED','OPTIONS_UPDATED','OPTIONS_RESTORED'],failed:['PROBE_FAILED','NOT_SUPPORTED'],cancelled:['PROBE_CANCELLED'],outcome_unknown:['OUTCOME_UNKNOWN','PROBE_UNSUPPORTED']};
   return Object.hasOwn(allowed,String(v.status))&&allowed[v.status as OutcomeStatus].includes(String(v.code));
 }
 export class ActionStore {

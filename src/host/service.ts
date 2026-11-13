@@ -4,7 +4,7 @@ import { diagnose, fingerprint } from '../core/diagnose.ts';
 import { parseIntent } from '../core/intent.ts';
 import { shareReport } from '../core/privacy.ts';
 import { ReadinessError } from '../core/types.ts';
-import type { ProbeEvidence, Report, SessionSnapshot, TaskIntent } from '../core/types.ts';
+import type { Capability, ProbeEvidence, Report, SessionSnapshot, TaskIntent } from '../core/types.ts';
 import type { CapturedStep, SnapshotAgent } from './snapshot.ts';
 export interface CheckContext {agent:SnapshotAgent;signal:AbortSignal;toolSet?:unknown;capturedStep?:CapturedStep;toolName:string;callId?:string;token?:symbol}
 interface Dependencies {
@@ -12,6 +12,9 @@ interface Dependencies {
   requestApproval(context:CheckContext,reason:string):Promise<string>;
   executeProbe(context:CheckContext,plan:ActionPlan,report:Report,signal:AbortSignal):Promise<ExecutionOutcome>;
   journal:ActionJournal;clock?:()=>number;maxReports?:number;
+  /** Capabilities with a real probe; other probe plans are refused, never faked. */
+  probeSupport?(capability:Capability):boolean;
+  timeoutMs?:number;
 }
 interface Stored {report:Report;baseIntent:TaskIntent;epoch:number}
 export interface RunResult {receipt:ActionReceipt;report:Report;options:{revision:number;operationId?:string}}
@@ -29,7 +32,7 @@ export class ReadinessService {
   private readonly actions:ActionStore;
   private readonly options=new TaskOptionsStore();
   private disposed=false;
-  constructor(deps:Dependencies){this.deps=deps;this.clock=deps.clock??Date.now;this.maxReports=deps.maxReports??100;if(!Number.isInteger(this.maxReports)||this.maxReports<1||this.maxReports>500)fail('INVALID_STORE_CONFIG');this.actions=new ActionStore({journal:deps.journal,clock:this.clock,maxPlans:100});}
+  constructor(deps:Dependencies){this.deps=deps;this.clock=deps.clock??Date.now;this.maxReports=deps.maxReports??100;if(!Number.isInteger(this.maxReports)||this.maxReports<1||this.maxReports>500)fail('INVALID_STORE_CONFIG');this.actions=new ActionStore({journal:deps.journal,clock:this.clock,maxPlans:100,timeoutMs:deps.timeoutMs??30000});}
   get generation(){return this.epoch;}
   async check(context:CheckContext,input:unknown):Promise<Report>{
     this.live();owner(context.agent?.id);context.signal.throwIfAborted();const baseIntent=parseIntent(input);const intent=this.effectiveIntent(context.agent.id,baseIntent);
@@ -47,7 +50,15 @@ export class ReadinessService {
     return r;
   }
   exportReport(sessionId:string,id:string){return shareReport(this.getReport(sessionId,id));}
-  plan(sessionId:string,reportId:string,input:unknown):ActionPlan{this.live();return this.actions.plan(owner(sessionId),this.getReport(sessionId,reportId),input);}
+  plan(sessionId:string,reportId:string,input:unknown):ActionPlan{
+    this.live();const report=this.getReport(sessionId,reportId);
+    const request=input as {kind?:unknown;probeId?:unknown}|null;
+    if(request!==null&&typeof request==='object'&&request.kind==='probe'){
+      const probeId=request.probeId;
+      if(typeof probeId!=='string'||(this.deps.probeSupport!==undefined&&!this.deps.probeSupport(probeId as Capability)))fail('PROBE_UNSUPPORTED');
+    }
+    return this.actions.plan(owner(sessionId),report,input);
+  }
   getPlan(sessionId:string,id:string){return this.actions.get(owner(sessionId),id);}
   async run(context:CheckContext,id:string):Promise<RunResult>{
     this.live();const sessionId=context.agent?.id;const p=this.actions.get(owner(sessionId),id);
