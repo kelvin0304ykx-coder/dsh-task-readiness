@@ -61,3 +61,9 @@
 - 新增 tests/lifecycle.test.ts：用真实 Cordis 上下文（ctx.provide 提供合成服务）挂载插件，确认 3 个工具完成注册；fiber.dispose() 后本插件自有日志关闭恰好一次；无持久化存储的宿主也能挂载与卸载。
 - 未验证：宿主级工具撤销（真实 ToolsService 的注册生命周期）仍属部分验证，因为本地没有实例化真实 ToolsService 服务。
 - 当前测试 151 项通过。
+## 2026-11-13 续：真实文档引擎探测
+
+- 用已安装 App 的 OfficeKit 与预装 LibreOffice 引擎（0.2.3）在临时目录构造真实 provider：合成 docx 转 PDF 25 664 字节、渲染 612×792 PNG、xlsx 重算 6 634 字节，全部通过。
+- 用本插件自己的 createProbeExecutor 对真实引擎跑 office.convert / render / recalculate，三项均 PROBE_PASSED；说明 Office 适配器不是只在合成桩上成立。
+- 边界：仍不代表任意用户文档可转换或排版正确；搜索、抓取、MCP、浏览器未执行真实调用（外部请求需要单独授权）。
+- 结果保存在 research/office-engine-results.json，可用 `pnpm probe:office` 复现。
