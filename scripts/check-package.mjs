@@ -26,7 +26,7 @@ else {
 if (/!!js|!!include|del:|update:/.test(patch)) fail('cordis.patch.yml must stay a plain insert without executable YAML tags');
 const built = await text('lib/index.js');
 if (built.length < 2000) fail('lib/index.js looks too small');
-for (const marker of ['readiness_check', 'readiness_probe', 'readiness_remedy', "export {"]) if (!built.includes(marker)) fail('lib/index.js is missing ' + marker);
+for (const marker of ['readiness_check', 'readiness_probe', 'readiness_remedy', 'presentResult', 'presentationMeta', "export {"]) if (!built.includes(marker)) fail('lib/index.js is missing ' + marker);
 if (built.includes('tests/')) fail('built bundle leaks test paths');
 if (/\/Users\//.test(built)) fail('built bundle embeds an absolute home directory');
 for (const asset of ['assets/probe.docx', 'assets/probe.xlsx']) {

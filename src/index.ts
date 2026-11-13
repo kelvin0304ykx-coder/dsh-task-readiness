@@ -82,12 +82,28 @@ const CHECK_OUTPUT = {
     checks: { type: 'array' as const }, routes: { type: 'array' as const }, nextSteps: { type: 'array' as const }, probeOptions: { type: 'array' as const }, unresolvedActions: { type: 'integer' as const },
   } },
   render: (_args: unknown, value: unknown) => [{ type: 'text' as const, text: renderCheck(value) }],
+  /** The same report record a UI card needs; no task text, session id or absolute path. */
+  presentationMeta: (_args: unknown, value: unknown) => {
+    const report = record(value);
+    const checks = Array.isArray(report.checks) ? report.checks : [];
+    return {
+      id: String(report.id ?? ''), status: String(report.status ?? ''), generatedAt: String(report.generatedAt ?? ''), boundary: String(report.boundary ?? ''),
+      checks: checks.map((item) => { const check = record(item); const capability = String(check.capability ?? ''); return { capability, label: LABELS[capability as Capability] ?? capability, status: String(check.status ?? ''), verification: String(check.verification ?? '') }; }),
+      routes: (Array.isArray(report.routes) ? report.routes : []).map((item) => ({ status: String(record(item).status ?? '') })),
+    };
+  },
 };
 const ACTION_OUTPUT = {
   schema: { type: 'object' as const, additionalProperties: false, properties: {
     status: { type: 'string' as const }, planId: { type: 'string' as const }, cost: { type: 'string' as const }, effects: { type: 'array' as const }, expiresAt: { type: 'string' as const }, note: { type: 'string' as const }, receipt: { type: 'json' as const }, report: { type: 'json' as const },
   } },
   render: (_args: unknown, value: unknown) => [{ type: 'text' as const, text: renderAction(value) }],
+  presentationMeta: (_args: unknown, value: unknown) => {
+    const result = record(value);
+    const receipt = record(result.receipt);
+    const report = record(result.report);
+    return { planId: String(result.planId ?? ''), status: String(result.status ?? ''), cost: String(result.cost ?? ''), effects: Array.isArray(result.effects) ? result.effects.map(String) : [], receiptCode: String(receipt.code ?? ''), receiptStatus: String(receipt.status ?? ''), reportId: String(report.id ?? ''), reportStatus: String(report.status ?? '') };
+  },
 };
 function record(value: unknown): Record<string, unknown> { return value !== null && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {}; }
 function renderCheck(value: unknown): string {
@@ -111,11 +127,49 @@ function renderCheck(value: unknown): string {
 }
 function renderAction(value: unknown): string {
   const result = record(value);
-  const lines = ['动作状态：' + String(result.status ?? 'unknown')];
+  const lines = ['动作状态：' + actionStatusText(String(result.status ?? 'unknown'))];
   if (result.planId) lines.push('计划：' + String(result.planId) + (result.cost ? '，费用：' + String(result.cost) : '') + (Array.isArray(result.effects) ? '，影响：' + result.effects.map(String).join('、') : ''));
   if (result.receipt) lines.push('回执：' + JSON.stringify(result.receipt));
   if (result.note) lines.push(String(result.note));
   return lines.join('\n');
+}
+function statusText(status: string): string { return STATUS_LABELS[status as keyof typeof STATUS_LABELS] ?? status; }
+const ACTION_STATUS_LABELS: Record<string, string> = { planned: '计划已生成，尚未执行', confirmed: '已确认，等待执行', running: '执行中', succeeded: '已成功', failed: '失败', cancelled: '已取消', outcome_unknown: '结果待确认' };
+function actionStatusText(status: string): string { return ACTION_STATUS_LABELS[status] ?? status; }
+/** Pending card for a check: the user-facing task name plus the inputs it will inspect. */
+function presentCheckCall(args: unknown) {
+  const input = body(args);
+  const name = typeof input.template === 'string' ? '模板 ' + input.template : typeof input.title === 'string' ? input.title.slice(0, 120) : '任务';
+  const files = Array.isArray(input.files) ? input.files.filter((item): item is string => typeof item === 'string').slice(0, 4).map((path) => ({ path })) : [];
+  return { card: 'generic' as const, title: '功能体检：' + name, kind: 'read' as const, ...(files.length === 0 ? {} : { locations: files }) };
+}
+function presentActionCall(verb: string) {
+  return (args: unknown) => {
+    const input = body(args);
+    const target = typeof input.requirementId === 'string' ? input.requirementId : typeof input.actionId === 'string' ? input.actionId : '';
+    return { card: 'generic' as const, title: verb + (target === '' ? '' : '：' + target), kind: 'execute' as const };
+  };
+}
+/** Completed card built from the same canonical record, never from the raw model text. */
+function presentCheckResult(_args: unknown, result: unknown) {
+  const meta = record(record(result).meta);
+  const checks = Array.isArray(meta.checks) ? meta.checks : [];
+  if (typeof meta.id !== 'string' || meta.id === '' || checks.length === 0) return undefined;
+  const lines = ['功能体检结果：' + statusText(String(meta.status))];
+  for (const item of checks) {
+    const check = record(item);
+    lines.push('- ' + String(check.label || check.capability) + '：' + statusText(String(check.status)));
+  }
+  if (typeof meta.boundary === 'string' && meta.boundary !== '') lines.push(meta.boundary);
+  return { card: 'generic' as const, title: '功能体检：' + statusText(String(meta.status)), content: [{ type: 'text' as const, text: lines.join('\n') }] };
+}
+function presentActionResult(_args: unknown, result: unknown) {
+  const meta = record(record(result).meta);
+  if (typeof meta.planId !== 'string' || meta.planId === '') return undefined;
+  const lines = ['动作状态：' + actionStatusText(String(meta.status))];
+  if (typeof meta.receiptCode === 'string' && meta.receiptCode !== '') lines.push('回执：' + meta.receiptCode);
+  if (typeof meta.reportStatus === 'string' && meta.reportStatus !== '') lines.push('复检：' + statusText(meta.reportStatus));
+  return { card: 'generic' as const, content: [{ type: 'text' as const, text: lines.join('\n') }] };
 }
 function probeOptions(report: Report) {
   return report.checks
@@ -177,6 +231,8 @@ export async function apply(ctx: PluginContext): Promise<void> {
     description: '只读检查当前会话能否开始一项任务：本轮工具准入、模型路由、工作目录、写入边界、文档引擎与 MCP 可见性，给出逐项状态、依据和下一步。可用 requirements 表达自然语言任务的能力要求，也可用内置 template。不执行任务、不联网测试、不改配置。',
     parameters: CHECK_PARAMETERS,
     output: CHECK_OUTPUT,
+    presentCall: (args: unknown) => presentCheckCall(args),
+    presentResult: (args: unknown, result: unknown) => presentCheckResult(args, result),
     isConcurrencySafe: () => true,
     execute: async (args: unknown, exec) => {
       const input = body(args);
@@ -195,6 +251,8 @@ export async function apply(ctx: PluginContext): Promise<void> {
     description: '为报告中的一项能力生成最小探测计划；run 模式先请求宿主确认，只有宿主返回 allowed-once 才执行，超时或取消保留未知结果；cancel 撤回计划。',
     parameters: PLAN_PARAMETERS,
     output: ACTION_OUTPUT,
+    presentCall: presentActionCall('生成探测计划'),
+    presentResult: (args: unknown, result: unknown) => presentActionResult(args, result),
     isConcurrencySafe: () => false,
     execute: async (args: unknown, exec) => {
       const input = body(args);
@@ -222,6 +280,8 @@ export async function apply(ctx: PluginContext): Promise<void> {
     description: '为本插件拥有的任务选项生成受控处理计划（输出目录、替代路线、恢复上一版本）；run 模式需要宿主确认，只改本插件自有状态，不改宿主模型、权限或其它插件配置。',
     parameters: REMEDY_PARAMETERS,
     output: ACTION_OUTPUT,
+    presentCall: presentActionCall('准备处理'),
+    presentResult: (args: unknown, result: unknown) => presentActionResult(args, result),
     isConcurrencySafe: () => false,
     execute: async (args: unknown, exec) => {
       const input = body(args);

@@ -3,7 +3,12 @@ import assert from 'node:assert/strict';
 import { apply, name as pluginName, inject } from '../src/index.ts';
 import type { JournalRecord } from '../src/core/journal.ts';
 const now = Date.now();
-interface ToolDef { name: string; description?: string; execute(args: unknown, exec: unknown): Promise<unknown>; output: { render(args: unknown, value: unknown): Array<{ type: string; text?: string }> } }
+interface ToolDef {
+  name: string; description?: string; execute(args: unknown, exec: unknown): Promise<unknown>;
+  output: { render(args: unknown, value: unknown): Array<{ type: string; text?: string }>; presentationMeta?(args: unknown, value: unknown): unknown };
+  presentCall?(args: unknown): { card: string; title?: string; kind?: string; locations?: Array<{ path: string }> } | undefined;
+  presentResult?(args: unknown, result: { content: unknown[]; isError: boolean; meta?: unknown }): { card: string; title?: string; content?: Array<{ type: string; text?: string }> } | undefined;
+}
 interface CallLog { approvals: number; probes: number; writes: number; version: string }
 function memoryTable() {
   const rows = new Map<string, JournalRecord>();
@@ -184,4 +189,59 @@ test('a check without requirements or a template is refused', async () => {
   const f = await ready();
   await assert.rejects(f.check.execute({ title: 'no requirements' }, execFor(f.agent, 'readiness_check')), { code: 'INVALID_INTENT' });
   await assert.rejects(f.check.execute({ template: 'shell-anything' }, execFor(f.agent, 'readiness_check')));
+});
+
+test('the pending card names the check and only follows real file inputs', async () => {
+  const f = await ready();
+  const call = f.check.presentCall!({ template: 'images', files: ['a.png', 'b.png', 'c.png', 'd.png', 'e.png'] });
+  assert.equal(call?.card, 'generic');
+  assert.match(call?.title ?? '', /^功能体检：模板 images$/);
+  assert.equal(call?.kind, 'read');
+  assert.deepEqual(call?.locations?.map((location) => location.path), ['a.png', 'b.png', 'c.png', 'd.png']);
+  const titled = f.check.presentCall!({ title: '联调检索', requirements: [{ id: 'r', capability: 'web.search' }] });
+  assert.match(titled?.title ?? '', /联调检索/);
+  assert.equal(titled?.locations, undefined);
+  assert.match(f.probe.presentCall!({ reportId: 'x', requirementId: 'r', mode: 'plan' })?.title ?? '', /生成探测计划/);
+  assert.match(f.remedy.presentCall!({ reportId: 'x', actionId: 'set-output', value: '/w', expectedOptionsRevision: 0 })?.title ?? '', /准备处理/);
+});
+test('the completed card renders the canonical record instead of the model text', async () => {
+  const f = await ready();
+  const result = (await f.check.execute({ title: 'Synthetic', requirements: [{ id: 'r', capability: 'files.read' }], files: ['notes.txt'] }, execFor(f.agent, 'readiness_check'))) as Record<string, unknown>;
+  const args = { title: 'Synthetic', requirements: [{ id: 'r', capability: 'files.read' }], files: ['notes.txt'] };
+  const meta = f.check.output.presentationMeta!(args, result);
+  const view = f.check.presentResult!(args, { content: [{ type: 'text', text: 'raw model text' }], isError: false, meta });
+  assert.equal(view?.card, 'generic');
+  assert.match(view?.title ?? '', /具备已知条件，尚未测试/);
+  const text = (view?.content ?? []).map((block) => block.text ?? '').join('\n');
+  assert.match(text, /读取文件/);
+  assert.ok(!text.includes('raw model text'));
+  assert.ok(!text.includes('session-a'));
+  assert.ok(!text.includes('notes.txt'));
+  const empty = f.check.presentResult!(args, { content: [], isError: false });
+  assert.equal(empty, undefined);
+});
+test('presentation metadata is a bounded projection without task text or paths', async () => {
+  const f = await ready();
+  const result = (await f.check.execute({ title: 'Synthetic confidential merger', requirements: [{ id: 'r', capability: 'files.read' }], files: ['/private/notes.txt'] }, execFor(f.agent, 'readiness_check'))) as Record<string, unknown>;
+  const meta = f.check.output.presentationMeta!({ title: 'Synthetic confidential merger', requirements: [{ id: 'r', capability: 'files.read' }], files: ['/private/notes.txt'] }, result) as Record<string, unknown>;
+  assert.equal(typeof meta.id, 'string');
+  assert.equal(meta.status, 'ready_unverified');
+  const checks = meta.checks as Array<Record<string, unknown>>;
+  assert.deepEqual(checks.map((check) => [check.capability, check.label]), [['files.read', '读取文件']]);
+  const serialized = JSON.stringify(meta);
+  assert.ok(!serialized.includes('confidential'));
+  assert.ok(!serialized.includes('/private'));
+  assert.ok(!serialized.includes('session-a'));
+});
+test('an executed action card shows the receipt and the recheck status', async () => {
+  const f = await ready();
+  const check = (await f.check.execute({ title: 'Synthetic', requirements: [{ id: 'r', capability: 'files.read' }], files: ['notes.txt'] }, execFor(f.agent, 'readiness_check'))) as Record<string, unknown>;
+  const ran = (await f.probe.execute({ reportId: check.id, requirementId: 'r', mode: 'run' }, execFor(f.agent, 'readiness_probe'))) as Record<string, unknown>;
+  const args = { reportId: check.id, requirementId: 'r', mode: 'run' };
+  const meta = f.probe.output.presentationMeta!(args, ran);
+  const view = f.probe.presentResult!(args, { content: [], isError: false, meta });
+  const text = (view?.content ?? []).map((block) => block.text ?? '').join('\n');
+  assert.match(text, /动作状态：已成功/);
+  assert.match(text, /回执：PROBE_PASSED/);
+  assert.match(text, /复检：指定测试通过/);
 });
