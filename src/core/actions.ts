@@ -113,6 +113,7 @@ export class ActionStore {
         catch{return {status:'outcome_unknown',code:'OUTCOME_UNKNOWN'} as ExecutionOutcome;}
       });
       outcome=await Promise.race([work,aborted]);
+      if(c.signal.aborted){await work;outcome={status:'outcome_unknown',code:'OUTCOME_UNKNOWN'};}
       try{await this.journal.record({type:'result',planId:p.id,sessionId:p.sessionId,at:new Date(this.clock()).toISOString(),action:p.request.kind,binding:p.binding,status:outcome.status,code:outcome.code});}
       catch{outcome={status:'outcome_unknown',code:'JOURNAL_FAILED'};}
       return this.settle(row,outcome);
@@ -122,7 +123,7 @@ export class ActionStore {
   private receipt(plan:ActionPlan,outcome:ExecutionOutcome):ActionReceipt{return {...outcome,id:'receipt-'+randomUUID(),planId:plan.id,binding:plan.binding,finishedAt:new Date(this.clock()).toISOString()};}
   private row(owner:ActionOwner,id:string):InternalPlan{principal(owner);const row=this.rows.get(id);if(!row||row.plan.sessionId!==owner.sessionId)fail('NOT_FOUND');return row;}
   private unexpired(plan:ActionPlan){if(this.clock()>=Date.parse(plan.expiresAt))fail('PLAN_EXPIRED');}
-  private matchesPermit(row:InternalPlan,permit:ActionPermit):boolean{if(!row.permit||typeof permit?.token!=='string'||permit.token.length!==row.permit.length)return false;return timingSafeEqual(Buffer.from(row.permit),Buffer.from(permit.token));}
+  private matchesPermit(row:InternalPlan,permit:ActionPermit):boolean{if(!row.permit||typeof permit?.token!=='string'||!/^[a-f0-9]{64}$/.test(permit.token)||permit.token.length!==row.permit.length)return false;return timingSafeEqual(Buffer.from(row.permit),Buffer.from(permit.token));}
   private prune(){for(const [id,row]of this.rows){if(row.plan.status!=='running'&&this.clock()>Date.parse(row.plan.expiresAt)+300000)this.rows.delete(id);}}
 }
 export interface TaskOptions {revision:number;outputDirectory?:string;routeId?:string}
