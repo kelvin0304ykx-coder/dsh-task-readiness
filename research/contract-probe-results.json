@@ -1,0 +1,91 @@
+{
+  "schema": "dsh-readiness-interface-probe/v1",
+  "sdkVersion": "0.2.2-rc.2",
+  "runtime": "v24.21.0",
+  "generatedAt": "2026-11-13T04:31:26.218Z",
+  "scope": "Actual installed method bodies with synthetic fixtures; no instantiated host or live services. Private selection-method stubs exist only inside this research probe, not a product API dependency.",
+  "passed": 16,
+  "failed": 0,
+  "results": [
+    {
+      "name": "registered-is-not-admitted",
+      "status": "passed",
+      "observation": "An inspected definition can exist while excluded from the current step."
+    },
+    {
+      "name": "conditional-unavailable-outside-step",
+      "status": "passed",
+      "observation": "No admission token means conditional registrations cannot be called."
+    },
+    {
+      "name": "resolved-set-is-agent-specific",
+      "status": "passed",
+      "observation": "Another Agent identity sees no tools in this admission set."
+    },
+    {
+      "name": "unloaded-tool-does-not-return",
+      "status": "passed",
+      "observation": "Removal after capture invalidates the admitted tool."
+    },
+    {
+      "name": "replacement-invalidates-old-admission",
+      "status": "passed",
+      "observation": "Same name with a different registration cannot reuse old admission."
+    },
+    {
+      "name": "disposed-set-is-empty",
+      "status": "passed",
+      "observation": "Step-owned tool handles cannot be retained as live report data."
+    },
+    {
+      "name": "activation-error-is-not-normal-unavailability",
+      "status": "passed",
+      "observation": "A failing activation callback rejects resolution instead of returning an absent tool."
+    },
+    {
+      "name": "cancelled-resolution-publishes-no-result",
+      "status": "passed",
+      "observation": "Cancellation remains cancellation, not a negative capability verdict."
+    },
+    {
+      "name": "schema-projection-excludes-executor",
+      "status": "passed",
+      "observation": "Public schema projection excludes executable callbacks and detaches parameter data."
+    },
+    {
+      "name": "search-ready-can-be-true-on-selection-failure",
+      "status": "passed",
+      "observation": "True must never be presented as successful provider selection or network connectivity."
+    },
+    {
+      "name": "search-ready-false-is-a-specific-preflight-result",
+      "status": "passed",
+      "observation": "False records the selected provider refusing readiness for the named chat route."
+    },
+    {
+      "name": "provider-without-readiness-is-not-tested",
+      "status": "passed",
+      "observation": "Omitted readiness check defaults true but supplies no successful-test evidence."
+    },
+    {
+      "name": "fetch-non-success-status-is-a-normal-result",
+      "status": "passed",
+      "observation": "A resolved Promise alone does not prove a usable retrieved page."
+    },
+    {
+      "name": "office-skill-activation-needs-next-step",
+      "status": "passed",
+      "observation": "Successful skill load admits three Office tools only in a newly resolved step; a failed load admits none."
+    },
+    {
+      "name": "office-activation-does-not-leak-to-other-agent",
+      "status": "passed",
+      "observation": "The successful activation of one synthetic Agent does not activate another."
+    },
+    {
+      "name": "office-admission-does-not-prove-engine-ready",
+      "status": "passed",
+      "observation": "An admitted Office conversion still fails when the engine service is absent; no source file is read."
+    }
+  ]
+}
