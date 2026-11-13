@@ -44,3 +44,10 @@
 - 新增拒绝路径测试：伪造授权参数、伪造计划 id、跨报告引用、超量或畸形意图、越界输出目录、合成材料缺失、引擎报错、写入中途取消、缺少输出目录、任务文本试图改变探测地址。全部按预期拒绝，未发现实现缺陷。
 - 新增自包含 SVG 图标并在清单中声明；包检查与清单测试同时校验图标大小、无脚本、无外链。
 - 当前测试 145 项通过，严格类型检查通过。
+## 2026-11-13 续：隔离安装验证与运行时自包含
+
+- 用宿主 CLI 在独立 DSH_HOME 中完成真实安装链路：`dsh plugin --profile readiness add <tgz>` → `--dump-config` 出现插入条目 → 在 profile 目录按包名 import 并跑冒烟 → `remove` 后条目消失、node_modules 清空。未启动宿主进程，未触碰日常配置。
+- 安装实证发现 profile 使用 autoInstallPeers=false，宿主包不会随插件安装。为避免真实加载时解析失败，运行时改为自包含：不 import 任何 @deepseek-ai/* 包，zod 打包进产物；工具定义直接按宿主 ToolDefinition 结构构造。
+- 以开发期类型测试补回契约证据：createTools 可赋给 readonly ToolDefinition[]，journal 声明通过宿主 defineDomain 校验；构建产物含零运行时 import，打包检查已加断言。
+- 代价与取舍：不再有宿主 defineTool 的参数预校验，语义校验保留在工具入口；这是为了“可安装即可加载”而做的取舍，已写入验收记录。
+- 当前测试 149 项通过，严格类型检查通过。

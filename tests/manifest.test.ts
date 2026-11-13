@@ -25,11 +25,11 @@ test('every exported subpath resolves to a shipped file', async () => {
     await readFile(new URL(value.replace(/^\.\//, ''), root));
   }
 });
-test('only the tool schema peers are required and no build tool leaks into runtime deps', () => {
-  assert.deepEqual(Object.keys(pkg.dependencies), ['zod']);
-  for (const peer of ['@deepseek-ai/dsh-tools', '@deepseek-ai/dsh-storage-domain', '@deepseek-ai/cordis']) assert.ok(Object.hasOwn(pkg.peerDependencies, peer), peer);
+test('the runtime is self-contained and build tools never become runtime dependencies', () => {
+  assert.deepEqual(Object.keys(pkg.dependencies), []);
+  assert.equal(pkg.peerDependencies, undefined);
   for (const runtimeOnly of ['typescript', 'esbuild', '@types/node']) {
-    assert.ok(!Object.hasOwn(pkg.dependencies ?? {}, runtimeOnly));
+    assert.ok(!Object.hasOwn(pkg.dependencies, runtimeOnly));
     assert.ok(Object.hasOwn(pkg.devDependencies, runtimeOnly), runtimeOnly);
   }
 });

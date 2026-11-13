@@ -4,8 +4,11 @@
  */
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { resolve } from 'node:path';
-const entry = resolve(process.argv[2] ?? fileURLToPath(new URL('../lib/index.js', import.meta.url)));
-const mod = await import(pathToFileURL(entry).href);
+const argument = process.argv[2];
+/** A bare package name is resolved like an installed host would; anything else is a path. */
+const byName = argument !== undefined && !argument.includes('/') && !argument.startsWith('.');
+const entry = byName ? argument : resolve(argument ?? fileURLToPath(new URL('../lib/index.js', import.meta.url)));
+const mod = await import(byName ? entry : pathToFileURL(entry).href);
 const problems = [];
 function check(condition, message) { if (!condition) problems.push(message); }
 const tools = new Map();

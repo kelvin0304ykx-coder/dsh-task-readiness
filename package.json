@@ -3,7 +3,7 @@
   "version": "0.1.0-preview.1",
   "private": true,
   "license": "UNLICENSED",
-  "description": "Session-scoped task readiness checks: can this session really run this task?",
+  "description": "Session-scoped task readiness checks: can this session really run this task? Self-contained bundle, no host package imports at runtime.",
   "type": "module",
   "main": "./lib/index.js",
   "exports": {
@@ -50,17 +50,6 @@
     "@deepseek-ai/dsh-user-approval": "0.2.2-rc.2",
     "@deepseek-ai/dsh-scope": "0.2.2-rc.2"
   },
-  "peerDependencies": {
-    "@deepseek-ai/cordis": "4.1.0",
-    "@deepseek-ai/dsh-tools": "0.2.2-rc.2",
-    "@deepseek-ai/dsh-commands": "0.2.2-rc.2",
-    "@deepseek-ai/dsh-agent": "0.2.2-rc.2",
-    "@deepseek-ai/dsh-storage-domain": "0.2.2-rc.2",
-    "@deepseek-ai/dsh-user-approval": "0.2.2-rc.2",
-    "@deepseek-ai/dsh-scope": "0.2.2-rc.2"
-  },
-  "dependencies": {
-    "zod": "4.6.6"
-  },
+  "dependencies": {},
   "icon": "./icon.svg"
 }

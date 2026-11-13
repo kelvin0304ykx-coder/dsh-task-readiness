@@ -1,18 +1,15 @@
-import { defineTool } from '@deepseek-ai/dsh-tools';
 import type { ActionJournal, JournalEvent } from './core/actions.ts';
 import type { JournalRecord } from './core/journal.ts';
-import { LABELS, STATUS_LABELS } from './core/messages.ts';
-import { modelReport } from './core/privacy.ts';
-import { TEMPLATE_IDS, templateIntent } from './core/intent.ts';
-import { CAPABILITIES, ReadinessError } from './core/types.ts';
-import type { Capability, ModelRoute, Report } from './core/types.ts';
+import { STATUS_LABELS } from './core/messages.ts';
+import { ReadinessError } from './core/types.ts';
+import type { ModelRoute } from './core/types.ts';
 import { openDurableJournal } from './host/journal-domain.ts';
 import type { JournalFacility } from './host/journal-domain.ts';
-import { createProbeExecutor, probeLimitation, supportsProbe } from './host/probes.ts';
+import { createProbeExecutor, supportsProbe } from './host/probes.ts';
 import { ReadinessService } from './host/service.ts';
-import type { CheckContext } from './host/service.ts';
 import { captureSnapshot } from './host/snapshot.ts';
-import type { CapturedStep, HostContext, ModelInfo, SnapshotAgent } from './host/snapshot.ts';
+import type { CapturedStep, HostContext, ModelInfo } from './host/snapshot.ts';
+import { createTools } from './host/tools.ts';
 /** Cordis plugin name used by Loader diagnostics. */
 export const name = 'task-readiness';
 /** The registry itself is required; every other service is read defensively per call. */
@@ -26,17 +23,10 @@ interface LlmPort { resolveModelInfo?(selection: unknown): Promise<{ inputModali
 interface StoragePort { open(spec: unknown): Promise<{ table(name: string): unknown; close(): Promise<void> }> }
 type CommandResultLike = { kind: 'success'; text?: string } | { kind: 'error'; text: string };
 interface CommandPort { register(definition: { name: string; description: string; handler: (invocation: { agent: { id?: string }; rawInput: string }) => CommandResultLike | Promise<CommandResultLike> }): () => void }
-interface ToolExecLike { agent?: unknown; toolSet?: unknown; signal: AbortSignal; callId?: unknown; name: string }
 function service<T>(ctx: HostContext, key: string): T | undefined { try { return (typeof ctx.get === 'function' ? ctx.get(key) : ctx[key]) as T | undefined; } catch { return undefined; } }
 function listen(ctx: PluginContext, event: string, handler: (...args: never[]) => unknown): void {
   const register = (ctx as { on?: (name: string, listener: (...args: unknown[]) => unknown) => unknown }).on;
   if (typeof register === 'function') register.call(ctx, event, handler as (...args: unknown[]) => unknown);
-}
-function contextOf(exec: ToolExecLike, steps: WeakMap<object, CapturedStep>): CheckContext {
-  const agent = exec.agent as SnapshotAgent | undefined;
-  if (!agent || typeof agent.id !== 'string' || !agent.id) throw new ReadinessError('AGENT_REQUIRED', '检查只在会话步骤内进行');
-  const capturedStep = steps.get(agent);
-  return { agent, signal: exec.signal, toolName: exec.name, ...(exec.toolSet === undefined ? {} : { toolSet: exec.toolSet }), ...(capturedStep === undefined ? {} : { capturedStep }), ...(exec.callId === undefined ? {} : { callId: String(exec.callId) }) };
 }
 /** Journal that refuses writes when the host offers no durable store; diagnostics still work. */
 class UnavailableJournal implements ActionJournal {
@@ -54,151 +44,30 @@ async function openJournal(ctx: HostContext): Promise<JournalHandle> {
   }
   return { journal: new UnavailableJournal(), close: async () => { await Promise.resolve(); } };
 }
-const CHECK_PARAMETERS = {
-  title: { type: 'string', description: 'One-line task name; no confidential detail. Required unless a template is used.' },
-  template: { type: 'string', enum: [...TEMPLATE_IDS], description: 'Built-in task template; replaces title and requirements.' },
-  requirements: { type: 'array', items: { type: 'object', additionalProperties: false, properties: { id: { type: 'string', required: true }, capability: { type: 'string', required: true, enum: [...CAPABILITIES] }, server: { type: 'string' } } } },
-  routes: { type: 'array', items: { type: 'object', additionalProperties: false, properties: { id: { type: 'string', required: true }, requires: { type: 'array', required: true, items: { type: 'string' } } } } },
-  files: { type: 'array', items: { type: 'string' } },
-  outputDirectory: { type: 'string' },
-} as const;
-const PLAN_PARAMETERS = {
-  reportId: { type: 'string', required: true, description: 'Report id returned by readiness_check.' },
-  requirementId: { type: 'string', required: true, description: 'Requirement id inside that report.' },
-  mode: { type: 'string', enum: ['plan', 'run', 'cancel'], description: 'plan describes the probe only; run needs host approval; cancel withdraws a plan id.' },
-  planId: { type: 'string', description: 'Existing plan id for cancel.' },
-} as const;
-const REMEDY_PARAMETERS = {
-  reportId: { type: 'string', required: true },
-  actionId: { type: 'string', required: true, enum: ['set-output', 'choose-route', 'restore-options'] },
-  value: { type: 'string', required: true, description: 'Chosen output directory, route id, or operation id to restore.' },
-  expectedOptionsRevision: { type: 'integer', required: true, description: 'Task-options revision the caller observed.' },
-  mode: { type: 'string', enum: ['plan', 'run', 'cancel'], description: 'plan describes the change only; run needs host approval.' },
-  planId: { type: 'string' },
-} as const;
-const CHECK_OUTPUT = {
-  schema: { type: 'object' as const, additionalProperties: false, properties: {
-    id: { type: 'string' as const }, revision: { type: 'integer' as const }, version: { type: 'integer' as const }, generatedAt: { type: 'string' as const }, status: { type: 'string' as const }, boundary: { type: 'string' as const },
-    checks: { type: 'array' as const }, routes: { type: 'array' as const }, nextSteps: { type: 'array' as const }, probeOptions: { type: 'array' as const }, unresolvedActions: { type: 'integer' as const },
-  } },
-  render: (_args: unknown, value: unknown) => [{ type: 'text' as const, text: renderCheck(value) }],
-  /** The same report record a UI card needs; no task text, session id or absolute path. */
-  presentationMeta: (_args: unknown, value: unknown) => {
-    const report = record(value);
-    const checks = Array.isArray(report.checks) ? report.checks : [];
-    return {
-      id: String(report.id ?? ''), status: String(report.status ?? ''), generatedAt: String(report.generatedAt ?? ''), boundary: String(report.boundary ?? ''),
-      checks: checks.map((item) => { const check = record(item); const capability = String(check.capability ?? ''); return { capability, label: LABELS[capability as Capability] ?? capability, status: String(check.status ?? ''), verification: String(check.verification ?? '') }; }),
-      routes: (Array.isArray(report.routes) ? report.routes : []).map((item) => ({ status: String(record(item).status ?? '') })),
-    };
-  },
-};
-const ACTION_OUTPUT = {
-  schema: { type: 'object' as const, additionalProperties: false, properties: {
-    status: { type: 'string' as const }, planId: { type: 'string' as const }, cost: { type: 'string' as const }, effects: { type: 'array' as const }, expiresAt: { type: 'string' as const }, note: { type: 'string' as const }, receipt: { type: 'json' as const }, report: { type: 'json' as const },
-  } },
-  render: (_args: unknown, value: unknown) => [{ type: 'text' as const, text: renderAction(value) }],
-  presentationMeta: (_args: unknown, value: unknown) => {
-    const result = record(value);
-    const receipt = record(result.receipt);
-    const report = record(result.report);
-    return { planId: String(result.planId ?? ''), status: String(result.status ?? ''), cost: String(result.cost ?? ''), effects: Array.isArray(result.effects) ? result.effects.map(String) : [], receiptCode: String(receipt.code ?? ''), receiptStatus: String(receipt.status ?? ''), reportId: String(report.id ?? ''), reportStatus: String(report.status ?? '') };
-  },
-};
-function record(value: unknown): Record<string, unknown> { return value !== null && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {}; }
-function renderCheck(value: unknown): string {
-  const report = record(value);
-  const checks = Array.isArray(report.checks) ? report.checks : [];
-  const lines = ['任务就绪检查 ' + String(report.id ?? '') + '：' + String(report.status ?? 'unknown')];
-  for (const item of checks) {
-    const check = record(item);
-    const status = String(check.status);
-    lines.push('- ' + String(check.label ?? check.capability ?? '') + '：' + (STATUS_LABELS[status as keyof typeof STATUS_LABELS] ?? status));
-  }
-  const steps = Array.isArray(report.nextSteps) ? report.nextSteps : [];
-  for (const item of steps) {
-    const step = record(item);
-    const actions = Array.isArray(step.actions) ? step.actions.map((action) => String(record(action).label ?? '')).filter(Boolean) : [];
-    const label = LABELS[String(step.capability) as Capability];
-    if (actions.length) lines.push('  下一步（' + (label ?? String(step.capability)) + '）：' + actions.join('；'));
-  }
-  lines.push(String(report.boundary ?? ''));
-  return lines.join('\n');
-}
-function renderAction(value: unknown): string {
-  const result = record(value);
-  const lines = ['动作状态：' + actionStatusText(String(result.status ?? 'unknown'))];
-  if (result.planId) lines.push('计划：' + String(result.planId) + (result.cost ? '，费用：' + String(result.cost) : '') + (Array.isArray(result.effects) ? '，影响：' + result.effects.map(String).join('、') : ''));
-  if (result.receipt) lines.push('回执：' + JSON.stringify(result.receipt));
-  if (result.note) lines.push(String(result.note));
-  return lines.join('\n');
-}
-function statusText(status: string): string { return STATUS_LABELS[status as keyof typeof STATUS_LABELS] ?? status; }
-const ACTION_STATUS_LABELS: Record<string, string> = { planned: '计划已生成，尚未执行', confirmed: '已确认，等待执行', running: '执行中', succeeded: '已成功', failed: '失败', cancelled: '已取消', outcome_unknown: '结果待确认' };
-function actionStatusText(status: string): string { return ACTION_STATUS_LABELS[status] ?? status; }
-/** Pending card for a check: the user-facing task name plus the inputs it will inspect. */
-function presentCheckCall(args: unknown) {
-  const input = body(args);
-  const name = typeof input.template === 'string' ? '模板 ' + input.template : typeof input.title === 'string' ? input.title.slice(0, 120) : '任务';
-  const files = Array.isArray(input.files) ? input.files.filter((item): item is string => typeof item === 'string').slice(0, 4).map((path) => ({ path })) : [];
-  return { card: 'generic' as const, title: '功能体检：' + name, kind: 'read' as const, ...(files.length === 0 ? {} : { locations: files }) };
-}
-function presentActionCall(verb: string) {
-  return (args: unknown) => {
-    const input = body(args);
-    const target = typeof input.requirementId === 'string' ? input.requirementId : typeof input.actionId === 'string' ? input.actionId : '';
-    return { card: 'generic' as const, title: verb + (target === '' ? '' : '：' + target), kind: 'execute' as const };
-  };
-}
-/** Completed card built from the same canonical record, never from the raw model text. */
-function presentCheckResult(_args: unknown, result: unknown) {
-  const meta = record(record(result).meta);
-  const checks = Array.isArray(meta.checks) ? meta.checks : [];
-  if (typeof meta.id !== 'string' || meta.id === '' || checks.length === 0) return undefined;
-  const lines = ['功能体检结果：' + statusText(String(meta.status))];
-  for (const item of checks) {
-    const check = record(item);
-    lines.push('- ' + String(check.label || check.capability) + '：' + statusText(String(check.status)));
-  }
-  if (typeof meta.boundary === 'string' && meta.boundary !== '') lines.push(meta.boundary);
-  return { card: 'generic' as const, title: '功能体检：' + statusText(String(meta.status)), content: [{ type: 'text' as const, text: lines.join('\n') }] };
-}
-function presentActionResult(_args: unknown, result: unknown) {
-  const meta = record(record(result).meta);
-  if (typeof meta.planId !== 'string' || meta.planId === '') return undefined;
-  const lines = ['动作状态：' + actionStatusText(String(meta.status))];
-  if (typeof meta.receiptCode === 'string' && meta.receiptCode !== '') lines.push('回执：' + meta.receiptCode);
-  if (typeof meta.reportStatus === 'string' && meta.reportStatus !== '') lines.push('复检：' + statusText(meta.reportStatus));
-  return { card: 'generic' as const, content: [{ type: 'text' as const, text: lines.join('\n') }] };
-}
-function probeOptions(report: Report) {
-  return report.checks
-    .filter((check) => check.status === 'ready_unverified' || check.status === 'unknown')
-    .map((check) => ({ capability: check.capability, requirementId: check.id, probe: supportsProbe(check.capability), limitation: probeLimitation(check.capability) }));
-}
-function body(args: unknown): Record<string, unknown> { return record(args); }
-/** Return a canonical tool value: the executor validates it against the declared output schema. */
-function canonical<T>(value: unknown): T { return value as T; }
-function requiredRequirements(source: Record<string, unknown>): unknown {
-  if (!Array.isArray(source.requirements) || source.requirements.length === 0) throw new ReadinessError('INVALID_INTENT', '需要 requirements 或 template');
-  return source.requirements;
-}
-function requiredString(source: Record<string, unknown>, key: string): string {
-  const value = source[key];
-  if (typeof value !== 'string' || !value.trim()) throw new ReadinessError('INVALID_INTENT', '缺少参数：' + key);
-  return value;
+async function modelInfoFor(ctx: HostContext, route: ModelRoute, epoch: number, cache: Map<string, ModelInfo>): Promise<ModelInfo | undefined> {
+  const key = route.provider + '\u0000' + route.model;
+  const cached = cache.get(key);
+  if (cached && cached.epoch === epoch) return cached;
+  const llm = service<LlmPort>(ctx, 'llm');
+  if (!llm?.resolveModelInfo) return undefined;
+  try {
+    const info = await llm.resolveModelInfo(route);
+    if (!info || !Array.isArray(info.inputModalities)) return undefined;
+    const entry: ModelInfo = { provider: route.provider, model: route.model, inputModalities: [...info.inputModalities], epoch };
+    cache.set(key, entry);
+    return entry;
+  } catch { return undefined; }
 }
 export async function apply(ctx: PluginContext): Promise<void> {
   const steps = new WeakMap<object, CapturedStep>();
   const lastRoute = new WeakMap<object, string>();
   const modelInfo = new Map<string, ModelInfo>();
   const journal = await openJournal(ctx);
-  const probeRunner = createProbeExecutor();
   const readiness = new ReadinessService({
     journal: journal.journal,
     probeSupport: supportsProbe,
     timeoutMs: 30000,
-    executeProbe: probeRunner,
+    executeProbe: createProbeExecutor(),
     capture: async (intent, context, epoch) => {
       const route: ModelRoute | undefined = context.capturedStep?.modelSelection;
       const info = route ? await modelInfoFor(ctx, route, epoch, modelInfo) : undefined;
@@ -226,83 +95,7 @@ export async function apply(ctx: PluginContext): Promise<void> {
   });
   const tools = service<{ register(definition: unknown): () => void }>(ctx, 'tools');
   if (!tools) throw new ReadinessError('TOOL_REGISTRY_UNAVAILABLE', '工具注册服务不可用');
-  tools.register(defineTool({
-    name: 'readiness_check',
-    description: '只读检查当前会话能否开始一项任务：本轮工具准入、模型路由、工作目录、写入边界、文档引擎与 MCP 可见性，给出逐项状态、依据和下一步。可用 requirements 表达自然语言任务的能力要求，也可用内置 template。不执行任务、不联网测试、不改配置。',
-    parameters: CHECK_PARAMETERS,
-    output: CHECK_OUTPUT,
-    presentCall: (args: unknown) => presentCheckCall(args),
-    presentResult: (args: unknown, result: unknown) => presentCheckResult(args, result),
-    isConcurrencySafe: () => true,
-    execute: async (args: unknown, exec) => {
-      const input = body(args);
-      const context = contextOf(exec, steps);
-      const files = Array.isArray(input.files) ? input.files : [];
-      const output = typeof input.outputDirectory === 'string' ? { outputDirectory: input.outputDirectory } : {};
-      const intent = typeof input.template === 'string'
-        ? { ...templateIntent(input.template), files, ...output }
-        : { version: 1, title: requiredString(input, 'title'), requirements: requiredRequirements(input), ...(input.routes === undefined ? {} : { routes: input.routes }), files, ...output };
-      const report = await readiness.check(context, intent);
-      return canonical({ ...modelReport(report), probeOptions: probeOptions(report), unresolvedActions: journal.journal.list(context.agent.id).filter((row) => row.resultAt === undefined).length });
-    },
-  }));
-  tools.register(defineTool({
-    name: 'readiness_probe',
-    description: '为报告中的一项能力生成最小探测计划；run 模式先请求宿主确认，只有宿主返回 allowed-once 才执行，超时或取消保留未知结果；cancel 撤回计划。',
-    parameters: PLAN_PARAMETERS,
-    output: ACTION_OUTPUT,
-    presentCall: presentActionCall('生成探测计划'),
-    presentResult: (args: unknown, result: unknown) => presentActionResult(args, result),
-    isConcurrencySafe: () => false,
-    execute: async (args: unknown, exec) => {
-      const input = body(args);
-      const context = contextOf(exec, steps);
-      const mode = typeof input.mode === 'string' ? input.mode : 'plan';
-      if (mode === 'cancel') {
-        const planId = requiredString(input, 'planId');
-        readiness.cancel(context.agent.id, planId);
-        return canonical({ status: 'cancelled', planId, note: '已撤回计划；未执行的部分不会补做。' });
-      }
-      const reportId = requiredString(input, 'reportId');
-      const report = readiness.getReport(context.agent.id, reportId);
-      const requirementId = requiredString(input, 'requirementId');
-      const requirement = report.intent.requirements.find((item) => item.id === requirementId);
-      if (!requirement) throw new ReadinessError('INVALID_PLAN', '报告中没有该能力项');
-      const plan = readiness.plan(context.agent.id, reportId, { kind: 'probe', probeId: requirement.capability, requirementId });
-      const summary = { planId: plan.id, status: plan.status, cost: plan.cost, effects: plan.effects, expiresAt: plan.expiresAt };
-      if (mode !== 'run') return canonical({ ...summary, note: '计划已生成，尚未执行；run 会先请求宿主确认。' + probeLimitation(requirement.capability) });
-      const result = await readiness.run(context, plan.id);
-      return canonical({ ...summary, status: result.receipt.status, receipt: result.receipt, report: modelReport(result.report) });
-    },
-  }));
-  tools.register(defineTool({
-    name: 'readiness_remedy',
-    description: '为本插件拥有的任务选项生成受控处理计划（输出目录、替代路线、恢复上一版本）；run 模式需要宿主确认，只改本插件自有状态，不改宿主模型、权限或其它插件配置。',
-    parameters: REMEDY_PARAMETERS,
-    output: ACTION_OUTPUT,
-    presentCall: presentActionCall('准备处理'),
-    presentResult: (args: unknown, result: unknown) => presentActionResult(args, result),
-    isConcurrencySafe: () => false,
-    execute: async (args: unknown, exec) => {
-      const input = body(args);
-      const context = contextOf(exec, steps);
-      const mode = typeof input.mode === 'string' ? input.mode : 'plan';
-      if (mode === 'cancel') {
-        const planId = requiredString(input, 'planId');
-        readiness.cancel(context.agent.id, planId);
-        return canonical({ status: 'cancelled', planId, note: '已撤回计划；未执行的部分不会补做。' });
-      }
-      const reportId = requiredString(input, 'reportId');
-      const actionId = requiredString(input, 'actionId');
-      const value = requiredString(input, 'value');
-      const expectedOptionsRevision = typeof input.expectedOptionsRevision === 'number' ? input.expectedOptionsRevision : 0;
-      const plan = readiness.plan(context.agent.id, reportId, { kind: 'remedy', actionId, value, expectedOptionsRevision });
-      const summary = { planId: plan.id, status: plan.status, cost: plan.cost, effects: plan.effects, expiresAt: plan.expiresAt };
-      if (mode !== 'run') return canonical({ ...summary, note: '计划已生成，尚未执行；run 会先请求宿主确认。' });
-      const result = await readiness.run(context, plan.id);
-      return canonical({ ...summary, status: result.receipt.status, receipt: result.receipt, report: modelReport(result.report) });
-    },
-  }));
+  for (const definition of createTools({ readiness, journal: { list: (sessionId: string) => journal.journal.list(sessionId) }, steps })) tools.register(definition);
   const commands = service<CommandPort>(ctx, 'commands');
   if (commands) {
     commands.register({ name: 'readiness', description: '查看当前会话的就绪检查结果与用法', handler: (invocation) => readinessCommand(readiness, invocation.agent.id, invocation.rawInput) });
@@ -310,20 +103,6 @@ export async function apply(ctx: PluginContext): Promise<void> {
     commands.register({ name: 'readiness-refresh', description: '让已保存的报告失效，并说明如何重新检查', handler: () => { readiness.invalidate(); return { kind: 'success' as const, text: '已标记旧证据失效。本入口没有本轮工具准入，请在会话中让模型调用 readiness_check 重新检查当前状态。' }; } });
   }
   ctx.effect?.(() => () => { readiness.dispose(); void journal.close(); });
-}
-async function modelInfoFor(ctx: HostContext, route: ModelRoute, epoch: number, cache: Map<string, ModelInfo>): Promise<ModelInfo | undefined> {
-  const key = route.provider + '\u0000' + route.model;
-  const cached = cache.get(key);
-  if (cached && cached.epoch === epoch) return cached;
-  const llm = service<LlmPort>(ctx, 'llm');
-  if (!llm?.resolveModelInfo) return undefined;
-  try {
-    const info = await llm.resolveModelInfo(route);
-    if (!info || !Array.isArray(info.inputModalities)) return undefined;
-    const entry: ModelInfo = { provider: route.provider, model: route.model, inputModalities: [...info.inputModalities], epoch };
-    cache.set(key, entry);
-    return entry;
-  } catch { return undefined; }
 }
 function readinessCommand(readiness: ReadinessService, sessionId: string | undefined, rawInput: string): CommandResultLike {
   if (!sessionId) return { kind: 'error', text: '无法确定当前会话。' };

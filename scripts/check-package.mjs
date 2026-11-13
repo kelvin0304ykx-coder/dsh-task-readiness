@@ -28,6 +28,8 @@ const built = await text('lib/index.js');
 if (built.length < 2000) fail('lib/index.js looks too small');
 for (const marker of ['readiness_check', 'readiness_probe', 'readiness_remedy', 'presentResult', 'presentationMeta', "export {"]) if (!built.includes(marker)) fail('lib/index.js is missing ' + marker);
 if (built.includes('tests/')) fail('built bundle leaks test paths');
+for (const specifier of built.matchAll(/from\s+"(?!node:)([^"]+)"/g)) fail('built bundle keeps a runtime import: ' + specifier[1]);
+if (/require\(\s*["'](?!node:)/.test(built)) fail('built bundle keeps a runtime require');
 if (/\/Users\//.test(built)) fail('built bundle embeds an absolute home directory');
 for (const asset of ['assets/probe.docx', 'assets/probe.xlsx']) {
   const bytes = await size(asset);
