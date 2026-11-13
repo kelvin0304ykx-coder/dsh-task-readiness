@@ -245,3 +245,35 @@ test('an executed action card shows the receipt and the recheck status', async (
   assert.match(text, /回执：PROBE_PASSED/);
   assert.match(text, /复检：指定测试通过/);
 });
+
+test('model arguments can never grant approval, even when they look like a confirmation', async () => {
+  const f = await ready({ approval: 'rejected' });
+  const check = (await f.check.execute({ title: 'Synthetic', requirements: [{ id: 'r', capability: 'files.read' }], files: ['notes.txt'] }, execFor(f.agent, 'readiness_check'))) as Record<string, unknown>;
+  await assert.rejects(f.probe.execute({ reportId: check.id, requirementId: 'r', mode: 'run', approved: true, confirmation: 'allowed-once', token: 'x' }, execFor(f.agent, 'readiness_probe')), { code: 'APPROVAL_DENIED' });
+  assert.equal(f.calls.probes, 0);
+  assert.equal(f.calls.approvals, 1);
+});
+test('the probe tool refuses to run from a forged plan id or foreign report', async () => {
+  const f = await ready();
+  const check = (await f.check.execute({ title: 'Synthetic', requirements: [{ id: 'r', capability: 'files.read' }], files: ['notes.txt'] }, execFor(f.agent, 'readiness_check'))) as Record<string, unknown>;
+  await assert.rejects(f.probe.execute({ reportId: check.id, requirementId: 'missing', mode: 'run' }, execFor(f.agent, 'readiness_probe')), { code: 'INVALID_PLAN' });
+  await assert.rejects(f.probe.execute({ reportId: check.id, requirementId: 'r', mode: 'cancel', planId: 'action-made-up' }, execFor(f.agent, 'readiness_probe')), { code: 'NOT_FOUND' });
+  assert.equal(f.calls.probes, 0);
+});
+test('oversized or malformed task intents are rejected before any evidence work', async () => {
+  const f = await ready();
+  const many = Array.from({ length: 25 }, (_, index) => ({ id: 'r' + index, capability: 'files.read' }));
+  await assert.rejects(f.check.execute({ title: 'too many', requirements: many }, execFor(f.agent, 'readiness_check')), { code: 'INVALID_INTENT' });
+  await assert.rejects(f.check.execute({ title: 'x'.repeat(201), requirements: [{ id: 'r', capability: 'files.read' }] }, execFor(f.agent, 'readiness_check')), { code: 'INVALID_INTENT' });
+  await assert.rejects(f.check.execute({ title: 'dup', requirements: [{ id: 'r', capability: 'files.read' }, { id: 'r', capability: 'files.write' }] }, execFor(f.agent, 'readiness_check')), { code: 'INVALID_INTENT' });
+  await assert.rejects(f.check.execute({ title: 'bad', requirements: [{ id: 'r', capability: 'files.read', server: 'alpha' }] }, execFor(f.agent, 'readiness_check')), { code: 'INVALID_INTENT' });
+  assert.equal(f.calls.probes, 0);
+});
+test('a remedy that would write outside the session boundary fails without changing the option', async () => {
+  const f = await ready();
+  const check = (await f.check.execute({ title: 'Synthetic', requirements: [{ id: 'out', capability: 'files.write' }], outputDirectory: '/work/out' }, execFor(f.agent, 'readiness_check'))) as Record<string, unknown>;
+  const ran = (await f.remedy.execute({ reportId: check.id, actionId: 'set-output', value: '/outside', expectedOptionsRevision: 0, mode: 'run' }, execFor(f.agent, 'readiness_remedy'))) as Record<string, unknown>;
+  assert.equal(ran.status, 'failed');
+  const receipt = ran.receipt as Record<string, unknown>;
+  assert.equal(receipt.code, 'NOT_SUPPORTED');
+});

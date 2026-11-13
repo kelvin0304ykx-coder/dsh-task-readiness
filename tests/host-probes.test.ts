@@ -227,3 +227,39 @@ test('host error text never becomes the probe result', async () => {
   assert.deepEqual(Object.keys(outcome).sort(), ['code', 'status']);
   assert.ok(!JSON.stringify(outcome).includes('sk-live'));
 });
+
+test('a missing or unreadable probe fixture fails instead of reporting a pass', async () => {
+  const office = { convert: async () => ({ pdf: new TextEncoder().encode('%PDF-1.7'), missingFonts: [] }) };
+  const outcome = await run('office.convert', { host: makeHost({ office }, calls()), executorOptions: { loadAsset: async () => { throw new Error('ENOENT'); } } });
+  assert.deepEqual(outcome, { status: 'failed', code: 'PROBE_FAILED' });
+});
+test('an engine error fails the probe and never leaks the engine text', async () => {
+  const office = { convert: async () => { throw new Error('LibreOffice failed: /Users/someone/secret.docx'); } };
+  const outcome = await run('office.convert', { host: makeHost({ office }, calls()), executorOptions: { loadAsset: async () => new Uint8Array([1]) } });
+  assert.deepEqual(outcome, { status: 'failed', code: 'PROBE_FAILED' });
+  assert.ok(!JSON.stringify(outcome).includes('secret.docx'));
+});
+test('an abort during the write probe is reported as cancelled, never as success', async () => {
+  const controller = new AbortController();
+  const fs = fileSystem({});
+  fs.writeText = async () => { controller.abort(); throw new Error('aborted'); };
+  const report = reportFor('files.write', { outputDirectory: '/work/out' });
+  const outcome = await run('files.write', { report, host: makeHost({ fs }, calls()), signal: controller.signal });
+  assert.deepEqual(outcome, { status: 'cancelled', code: 'PROBE_CANCELLED' });
+});
+test('a write probe without an output directory cannot pass', async () => {
+  const fs = fileSystem({});
+  let writes = 0;
+  fs.writeText = async () => { writes += 1; return { version: 'v1', operation: 'create', before: null, after: '' }; };
+  const outcome = await run('files.write', { report: reportFor('files.write'), host: makeHost({ fs }, { writes: [], deletes: [], reads: [], fetches: [], searches: [], office: [] }) });
+  assert.deepEqual(outcome, { status: 'failed', code: 'PROBE_FAILED' });
+  assert.equal(writes, 0);
+});
+test('task text cannot redirect the fetch probe to another address', async () => {
+  const fetched: string[] = [];
+  const web = { fetch: async (request: { url: string }) => { fetched.push(request.url); return { url: request.url, statusCode: 200, body: { kind: 'html', content: 'Example Domain' }, truncated: false }; } };
+  const report = reportFor('web.fetch', { files: ['http://169.254.169.254/latest/meta-data/', 'https://internal.example/'] });
+  const outcome = await run('web.fetch', { report, host: makeHost({ web }, calls()) });
+  assert.deepEqual(outcome, { status: 'succeeded', code: 'PROBE_PASSED' });
+  assert.deepEqual(fetched, ['https://example.com/']);
+});

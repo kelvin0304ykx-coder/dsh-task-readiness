@@ -39,3 +39,12 @@ test('the published file list ships the built entry, the patch and the synthetic
   assert.ok(pkg.files.includes('assets/*'));
   assert.ok(pkg.files.includes('README.md'));
 });
+test('the package icon is a self-contained, size-bounded SVG', async () => {
+  assert.equal(pkg.icon, './icon.svg');
+  assert.ok(pkg.files.includes('icon.svg'));
+  const svg = await readFile(new URL('icon.svg', root), 'utf8');
+  assert.ok(Buffer.byteLength(svg) <= 262144);
+  assert.match(svg, /^<svg[^>]*viewBox="0 0 64 64"/);
+  assert.ok(!/<script|<foreignObject|href="http|url\(http/i.test(svg));
+  assert.equal(pkg.dsh.bundle.listedByDefault, true);
+});

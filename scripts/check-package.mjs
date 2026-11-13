@@ -35,6 +35,12 @@ for (const asset of ['assets/probe.docx', 'assets/probe.xlsx']) {
   else notes.push(asset + ' ' + bytes + ' bytes');
 }
 if ((await size('assets/probe.png')) > 0) notes.push('assets/probe.png present');
+if (pkg.icon !== './icon.svg') fail('icon must reference ./icon.svg');
+const iconSvg = await text('icon.svg');
+if (iconSvg.length > 262144) fail('icon exceeds the 256 KiB manifest limit');
+if (!/^<svg[^>]*viewBox="0 0 64 64"/.test(iconSvg)) fail('icon must be an inline SVG with a 64x64 viewBox');
+if (/<script|<foreignObject|href="http|url\(http/i.test(iconSvg)) fail('icon must not load external or executable content');
+if (!pkg.files.includes('icon.svg')) fail('icon.svg must ship with the package');
 const scannable = ['package.json', 'cordis.patch.yml', 'README.md', 'lib/index.js'];
 for (const relative of scannable) {
   let content = '';

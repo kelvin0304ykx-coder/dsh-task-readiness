@@ -28,12 +28,14 @@
   "files": [
     "lib/**/*.js",
     "assets/*",
+    "icon.svg",
     "cordis.patch.yml",
     "README.md"
   ],
   "dsh": {
     "bundle": {
-      "patch": "./cordis.patch.yml"
+      "patch": "./cordis.patch.yml",
+      "listedByDefault": true
     }
   },
   "devDependencies": {
@@ -59,5 +61,6 @@
   },
   "dependencies": {
     "zod": "4.6.6"
-  }
+  },
+  "icon": "./icon.svg"
 }
