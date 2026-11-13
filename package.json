@@ -1,8 +1,7 @@
 {
   "name": "dsh-task-readiness",
-  "version": "0.1.0-preview.1",
-  "private": true,
-  "license": "UNLICENSED",
+  "version": "0.1.0",
+  "license": "MIT",
   "description": "Session-scoped task readiness checks: can this session really run this task? Self-contained bundle, no host package imports at runtime.",
   "type": "module",
   "main": "./lib/index.js",
@@ -33,13 +32,15 @@
     "icon.svg",
     "cordis.patch.yml",
     "README.md",
-    "CHANGELOG.md"
+    "CHANGELOG.md",
+    "LICENSE"
   ],
   "dsh": {
     "bundle": {
       "patch": "./cordis.patch.yml",
       "listedByDefault": true
-    }
+    },
+    "manifestVersion": 1
   },
   "devDependencies": {
     "typescript": "6.0.3",
@@ -54,5 +55,14 @@
     "@deepseek-ai/dsh-scope": "0.2.2-rc.2"
   },
   "dependencies": {},
-  "icon": "./icon.svg"
+  "icon": "./icon.svg",
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "readiness",
+    "diagnostics",
+    "office",
+    "probe"
+  ]
 }

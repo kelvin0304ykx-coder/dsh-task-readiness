@@ -79,3 +79,9 @@
 - 最终 tarball sha256：251637e1c23af2c88bd3a0b83593b508ccb8b302ee607b994a4bff35e1cd41f8；包内仅 lib、assets、icon、cordis.patch.yml、README、CHANGELOG、package.json。
 - 自基线以来 114 个文件、10641 行新增；源码（core + host）约 1243 行，其余为测试、研究探针与文档。
 - 结论：目标约定的四层验证（单元 / SDK 与 Host 形状 / 打包 / 隔离安装）均已完成并留证；真实宿主启动挂载、自定义界面面板、联网与 MCP/浏览器真实调用、Windows/Linux 仍为未验证层，已在验收记录与 README 中逐条列明。
+## 2026-11-13 晚：真实宿主运行验证与可上传版本
+
+- 用户明确要求“可运行 + 上传的版本”，据此启动了一次真实宿主：独立 DSH_HOME（/tmp/dsh-run4），profile 仅 dsh-base + dsh-web-app + 本插件，端口 57914，openBrowser=false。宿主启动、GUI 200、插件页显示 v0.1.0 且“共 1 个 · 1 运行中”。验证后进程已终止。
+- 发布形态改为可上传：0.1.0、MIT、移除 private、LICENSE/CHANGELOG 随包、keywords 与 manifestVersion；打包检查同步要求非 private 与具体许可证。
+- 未执行 npm publish：需要发布账号与令牌，属对外动作，等用户确认。
+- 仍未验证：隔离 home 无模型凭据，未发起模型回合，也未在会话内实际调用三个工具。

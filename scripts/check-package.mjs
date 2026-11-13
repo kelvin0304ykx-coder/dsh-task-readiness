@@ -6,7 +6,10 @@ function fail(message) { problems.push(message); }
 async function text(relative) { return readFile(new URL(relative, root), 'utf8'); }
 async function size(relative) { try { return (await stat(new URL(relative, root))).size; } catch { return 0; } }
 const pkg = JSON.parse(await text('package.json'));
-if (pkg.private !== true) fail('package must stay private until publication is authorized');
+if (pkg.private === true) fail('a publishable package must not be private');
+if (typeof pkg.license !== 'string' || pkg.license === 'UNLICENSED' || pkg.license.trim() === '') fail('declare a concrete license');
+if (!pkg.files.includes('LICENSE')) fail('LICENSE must ship with the package');
+if ((await size('LICENSE')) === 0) fail('LICENSE file is missing');
 if (typeof pkg.engines?.dsh !== 'string' || !/^\d+\.\d+\.\d+/.test(pkg.engines.dsh)) fail('engines.dsh must pin an exact host version');
 if (pkg.dsh?.bundle?.patch !== './cordis.patch.yml') fail('dsh.bundle.patch must point at ./cordis.patch.yml');
 if (pkg.main !== './lib/index.js') fail('main must be ./lib/index.js');

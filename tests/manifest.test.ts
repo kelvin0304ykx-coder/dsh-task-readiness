@@ -4,9 +4,14 @@ import { readFile } from 'node:fs/promises';
 const root = new URL('../', import.meta.url);
 const pkg = JSON.parse(await readFile(new URL('package.json', root), 'utf8'));
 const patch = await readFile(new URL('cordis.patch.yml', root), 'utf8');
-test('the package declares an exact host baseline instead of a drifting range', () => {
+test('the package is publishable and declares an exact host baseline', () => {
   assert.equal(pkg.name, 'dsh-task-readiness');
-  assert.equal(pkg.private, true);
+  assert.equal(pkg.private, undefined);
+  assert.equal(pkg.license, 'MIT');
+  assert.equal(pkg.version, '0.1.0');
+  assert.equal(pkg.dsh.manifestVersion, 1);
+  assert.ok(pkg.files.includes('LICENSE'));
+  assert.ok(Array.isArray(pkg.keywords) && pkg.keywords.includes('dsh-plugin'));
   assert.equal(pkg.engines.dsh, '0.2.2-rc.2');
   assert.equal(pkg.type, 'module');
   assert.equal(pkg.main, './lib/index.js');

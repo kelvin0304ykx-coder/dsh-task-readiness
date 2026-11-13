@@ -2,7 +2,7 @@
 
 开工前先确认“这个会话现在到底能不能做这件事”。面向普通用户，不替代宿主权限，也不把诊断通过当成任务质量或安全保证。
 
-当前版本：0.1.0-preview.1，宿主基线 DSH 0.2.2-rc.2。未发布，未安装到任何日常 profile。
+当前版本：0.1.0，宿主基线 DSH 0.2.2-rc.2。许可证 MIT。已在独立 profile 完成安装、启动加载与卸载验证；尚未发布到公共仓库。
 
 ## 它做什么
 
@@ -39,9 +39,17 @@
 
 没有自动探测的能力会显示“未知”与人工验证办法，不会伪装成不支持或已通过。
 
-## 安装（已在隔离 profile 验证安装与卸载，未验证启动挂载）
+## 安装（已在独立 profile 完成安装、启动加载与卸载）
 
-本包是一个 Cordis bundle：`package.json` 的 `dsh.bundle.patch` 指向 `cordis.patch.yml`，补丁插入一个名为 `dsh-task-readiness` 的插件条目。已在独立 `DSH_HOME` 中用宿主的 `dsh plugin --profile <name> add <tgz>` 完成安装：插件自动加入该 profile 的 bundle 列表，`dsh --profile <name> --dump-config` 能看到插入条目，`remove` 后条目消失。运行时不 import 任何宿主包，也不额外安装依赖。若要让插件在某个 profile 生效，仍需在该 profile 启动宿主，这一步本机未执行。
+本包是一个 Cordis bundle：`package.json` 的 `dsh.bundle.patch` 指向 `cordis.patch.yml`，补丁插入一个名为 `dsh-task-readiness` 的插件条目。```sh
+# 发布后（或本地 tarball）
+dsh plugin --profile <你的 profile> add dsh-task-readiness        # 或 add ./dsh-task-readiness-0.1.0.tgz
+dsh --profile <你的 profile> --dump-config                        # 应出现 id: task-readiness
+dsh --profile <你的 profile>                                      # 启动后插件页显示“1 运行中”
+dsh plugin --profile <你的 profile> remove dsh-task-readiness     # 卸载
+```
+
+已在独立 `DSH_HOME` 上用同一组命令实测：安装后自动加入 profile 的 bundle 列表；`--dump-config` 出现插入条目；启动后插件页显示 `dsh-task-readiness 0.1.0`、开关已启用、包含的组件“共 1 个 · 1 运行中”；`remove` 后条目消失。运行时不 import 任何宿主包，也不额外安装依赖。
 
 ## 验证状态
 
@@ -52,8 +60,9 @@
 | 插件入口的 Host 形状测试（工具注册、审批、命令、事件） | 通过 |
 | 打包内容检查 | 通过 |
 | 打包产物在隔离目录中的导入与运行 | 通过 |
-| 隔离 profile 安装、按包名加载、宿主组合校验、卸载 | 通过（独立 DSH_HOME，未启动宿主进程） |
-| 真实 DSH Host 启动挂载 | 未验证（未启动宿主进程） |
+| 隔离 profile 安装、按包名加载、宿主组合校验、卸载 | 通过 |
+| 真实宿主加载（独立 DSH_HOME，插件页显示“1 运行中”） | 通过 |
+| 真实宿主中的模型回合与工具调用 | 未验证（隔离宿主无模型凭据） |
 | 真实 Cordis 上下文挂载 / 卸载 | 通过 |
 | 宿主 SDK 层探针（注册表 + JSON Schema 校验器） | 通过（9 项） |
 | 会话内报告卡片（宿主呈现层） | 已实现，未经 GUI 实测 |
