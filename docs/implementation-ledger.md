@@ -51,3 +51,8 @@
 - 以开发期类型测试补回契约证据：createTools 可赋给 readonly ToolDefinition[]，journal 声明通过宿主 defineDomain 校验；构建产物含零运行时 import，打包检查已加断言。
 - 代价与取舍：不再有宿主 defineTool 的参数预校验，语义校验保留在工具入口；这是为了“可安装即可加载”而做的取舍，已写入验收记录。
 - 当前测试 149 项通过，严格类型检查通过。
+## 2026-11-13 续：宿主 SDK 层插件探针
+
+- 新增 research/plugin-mount-probe.mjs：把构建产物挂进真实 ToolsService 方法体，并用宿主自己的 JSON Schema 校验器检查参数与输出。9 项全部通过。
+- 该探针同时验证了“有准入/无准入”两种状态、计划惰性到审批执行再到复检、未支持能力在计划阶段拒绝，以及产物零非内置 import。
+- 探针不启动宿主、不读写 profile；真实启动挂载仍未验证。

@@ -23,7 +23,8 @@
     "build": "node scripts/build.mjs",
     "check": "node scripts/check-package.mjs",
     "smoke": "node scripts/smoke.mjs",
-    "verify": "node scripts/build.mjs && tsc --noEmit && node --test tests/*.test.ts && node scripts/check-package.mjs && node scripts/smoke.mjs"
+    "verify": "node scripts/build.mjs && tsc --noEmit && node --test tests/*.test.ts && node scripts/check-package.mjs && node scripts/smoke.mjs",
+    "probe": "ELECTRON_RUN_AS_NODE=1 '/Applications/DeepSeek Harness.app/Contents/MacOS/DeepSeek Harness' research/plugin-mount-probe.mjs '/Applications/DeepSeek Harness.app/Contents/Resources/app.asar/dsh/node_modules/@deepseek-ai' lib/index.js research/plugin-mount-results.json"
   },
   "files": [
     "lib/**/*.js",

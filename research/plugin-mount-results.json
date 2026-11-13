@@ -1,0 +1,56 @@
+{
+  "schema": "dsh-readiness-plugin-probe/v1",
+  "sdkVersion": "0.2.2-rc.2",
+  "runtime": "v24.21.0",
+  "generatedAt": "2026-11-13T10:08:35.557Z",
+  "scope": "The built plugin mounted through real registry methods and the real JSON Schema validator with synthetic fixtures; no live Context, server or profile.",
+  "passed": 9,
+  "failed": 0,
+  "results": [
+    {
+      "name": "apply registers the three readiness tools into a registry",
+      "status": "passed",
+      "observation": "Three readiness tools registered; no host package import was needed."
+    },
+    {
+      "name": "every definition schema stays inside the host JSON Schema subset",
+      "status": "passed",
+      "observation": "Host assertSupportedJsonSchema/assertObjectJsonSchema accept all parameter and output schemas."
+    },
+    {
+      "name": "the host validator accepts valid arguments and rejects broken ones",
+      "status": "passed",
+      "observation": "Declared enums, required fields and closed nested objects all bind through the host validator."
+    },
+    {
+      "name": "the real registry admits the readiness tools in a resolved step",
+      "status": "passed",
+      "observation": "Admission, executable lookup and model-facing schema projection all work with the plugin definitions."
+    },
+    {
+      "name": "a step check reports step scope and only admitted capabilities",
+      "status": "passed",
+      "observation": "Step-scoped admission drives availability; the check itself runs no probe."
+    },
+    {
+      "name": "without a step admission the same check cannot claim availability",
+      "status": "passed",
+      "observation": "No toolSet means registered-scope only, so the report stays unknown instead of optimistic."
+    },
+    {
+      "name": "a probe plan is inert and an approved probe verifies the capability",
+      "status": "passed",
+      "observation": "Plan stays inert; run asks the host once and the recheck becomes verified."
+    },
+    {
+      "name": "an unsupported capability is refused at plan time with a host-valid error",
+      "status": "passed",
+      "observation": "Unsupported probes never reach the host as a failed capability."
+    },
+    {
+      "name": "the built plugin has no runtime import outside node builtins",
+      "status": "passed",
+      "observation": "Installed artifact imports only node builtins, so profile peer resolution cannot break it."
+    }
+  ]
+}
