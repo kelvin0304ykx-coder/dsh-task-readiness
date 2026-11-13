@@ -1,0 +1,116 @@
+{
+  "retrievedAt": "2026-11-13T04:25:30.397Z",
+  "purpose": "Published SDK declaration inspection only. No install and no package execution.",
+  "packages": [
+    {
+      "name": "@deepseek-ai/dsh-tools",
+      "version": "0.2.2-rc.2",
+      "metadataUrl": "https://registry.npmjs.org/@deepseek-ai%2fdsh-tools/0.2.2-rc.2",
+      "tarball": "https://registry.npmjs.org/@deepseek-ai/dsh-tools/-/dsh-tools-0.2.2-rc.2.tgz",
+      "integrity": "sha512-CqXtsX/ztS1M8xs5Q8z9S6xGuKa64jI0XTjNzeEpI+1GnCXt9RBONKUfWsxMKoqopAUjuIeiYMc9SCvh+6vIXQ==",
+      "bytes": 131579,
+      "gitHead": null,
+      "repository": "packages/core/tools"
+    },
+    {
+      "name": "@deepseek-ai/dsh-agent",
+      "version": "0.2.2-rc.2",
+      "metadataUrl": "https://registry.npmjs.org/@deepseek-ai%2fdsh-agent/0.2.2-rc.2",
+      "tarball": "https://registry.npmjs.org/@deepseek-ai/dsh-agent/-/dsh-agent-0.2.2-rc.2.tgz",
+      "integrity": "sha512-UsbQ3QBB8Gl8YTzQ7ScuXHuuI8o+1m1vZktAA3ayzxZHxvX1uRAG3kYkKf8sDRlkhue63Zb+DfAw3VPjd3PSpw==",
+      "bytes": 71461,
+      "gitHead": null,
+      "repository": "packages/core/agent"
+    },
+    {
+      "name": "@deepseek-ai/dsh-llm",
+      "version": "0.2.2-rc.2",
+      "metadataUrl": "https://registry.npmjs.org/@deepseek-ai%2fdsh-llm/0.2.2-rc.2",
+      "tarball": "https://registry.npmjs.org/@deepseek-ai/dsh-llm/-/dsh-llm-0.2.2-rc.2.tgz",
+      "integrity": "sha512-JPUhqQP4Z/XGX0t7fNvzPUoCSzBRar1ZLbpbZ/evCCvoBVFKtONbKLUyIyS2GOw6Z8bnCEbCIs2Da25SZ6aiVQ==",
+      "bytes": 174184,
+      "gitHead": null,
+      "repository": "packages/llm/llm"
+    },
+    {
+      "name": "@deepseek-ai/dsh-web",
+      "version": "0.2.2-rc.2",
+      "metadataUrl": "https://registry.npmjs.org/@deepseek-ai%2fdsh-web/0.2.2-rc.2",
+      "tarball": "https://registry.npmjs.org/@deepseek-ai/dsh-web/-/dsh-web-0.2.2-rc.2.tgz",
+      "integrity": "sha512-vRo/c2ohJaYRMpqJAl9BF5kBjJpoHFXdBHysHSrPdWXCdM+HbD+Bk7c1Pr4PrgG2ol2UrDEDup61l+wFyJoOxw==",
+      "bytes": 33682,
+      "gitHead": null,
+      "repository": "packages/web/web"
+    },
+    {
+      "name": "@deepseek-ai/dsh-mcp-client",
+      "version": "0.2.2-rc.2",
+      "metadataUrl": "https://registry.npmjs.org/@deepseek-ai%2fdsh-mcp-client/0.2.2-rc.2",
+      "tarball": "https://registry.npmjs.org/@deepseek-ai/dsh-mcp-client/-/dsh-mcp-client-0.2.2-rc.2.tgz",
+      "integrity": "sha512-4jWYwA0u/hOBC/itODef4WXgHgLHDYqFIIzYhJc33IPy3NNU3xvOm5zQZ6x+V3EWBXDip3dNtPs/X/KjCCfRaw==",
+      "bytes": 96847,
+      "gitHead": null,
+      "repository": "packages/mcp/mcp-client"
+    },
+    {
+      "name": "@deepseek-ai/dsh-authorization",
+      "version": "0.2.2-rc.2",
+      "metadataUrl": "https://registry.npmjs.org/@deepseek-ai%2fdsh-authorization/0.2.2-rc.2",
+      "tarball": "https://registry.npmjs.org/@deepseek-ai/dsh-authorization/-/dsh-authorization-0.2.2-rc.2.tgz",
+      "integrity": "sha512-zDe8jvk30lB8eKoY399ELVHsATT66GqShKz/3sWEc094zKbaXFXj5HIA6usadYqafnmJRg/QdrfITjkNpxKWGQ==",
+      "bytes": 29922,
+      "gitHead": null,
+      "repository": "packages/credentials/authorization"
+    },
+    {
+      "name": "@deepseek-ai/dsh-user-approval",
+      "version": "0.2.2-rc.2",
+      "metadataUrl": "https://registry.npmjs.org/@deepseek-ai%2fdsh-user-approval/0.2.2-rc.2",
+      "tarball": "https://registry.npmjs.org/@deepseek-ai/dsh-user-approval/-/dsh-user-approval-0.2.2-rc.2.tgz",
+      "integrity": "sha512-styVMx/Rmm/ADfEoi8bM48TvU5JysDs9yXbONWPV5R5DLptXQBqN0UApCLe6lwc5NfDR5g2N6aBvV1OvMXIV2g==",
+      "bytes": 26104,
+      "gitHead": null,
+      "repository": "packages/interaction/user-approval"
+    },
+    {
+      "name": "@deepseek-ai/dsh-sandbox-policy",
+      "version": "0.2.2-rc.2",
+      "metadataUrl": "https://registry.npmjs.org/@deepseek-ai%2fdsh-sandbox-policy/0.2.2-rc.2",
+      "tarball": "https://registry.npmjs.org/@deepseek-ai/dsh-sandbox-policy/-/dsh-sandbox-policy-0.2.2-rc.2.tgz",
+      "integrity": "sha512-Qj5uZoDKqjuLRkYkHtLFtN6K5Unk0XisDMKHF2CxAZtOK/up8E95QW5zEUKudDmhBAg8fBidjH06A+kGGTaG5Q==",
+      "bytes": 24538,
+      "gitHead": null,
+      "repository": "packages/sandbox/sandbox-policy"
+    },
+    {
+      "name": "@deepseek-ai/dsh-fs",
+      "version": "0.2.2-rc.2",
+      "metadataUrl": "https://registry.npmjs.org/@deepseek-ai%2fdsh-fs/0.2.2-rc.2",
+      "tarball": "https://registry.npmjs.org/@deepseek-ai/dsh-fs/-/dsh-fs-0.2.2-rc.2.tgz",
+      "integrity": "sha512-y3ocU0T1mZgFIAfgqAo+4l61zqvNpdsmRM0Pp2Ek8xDu6XvtIcsur3ST/iUsudtz1m/ope8t27jeEgtTefn/TQ==",
+      "bytes": 24647,
+      "gitHead": null,
+      "repository": "packages/fs/fs"
+    },
+    {
+      "name": "@deepseek-ai/dsh-api-session-controller",
+      "version": "0.2.2-rc.2",
+      "metadataUrl": "https://registry.npmjs.org/@deepseek-ai%2fdsh-api-session-controller/0.2.2-rc.2",
+      "tarball": "https://registry.npmjs.org/@deepseek-ai/dsh-api-session-controller/-/dsh-api-session-controller-0.2.2-rc.2.tgz",
+      "integrity": "sha512-f6bwCQeVyJ2WqvBDdU1Rp0/hW3WmdlWmD9/cHnU9bRwNanG2emjMx13XFVyxTsvcvUqo8SK8EWUldGieldp0Qg==",
+      "bytes": 528934,
+      "gitHead": null,
+      "repository": "packages/api/session-controller"
+    },
+    {
+      "name": "@deepseek-ai/dsh-host-plugin-inventory",
+      "version": "0.2.2-rc.2",
+      "metadataUrl": "https://registry.npmjs.org/@deepseek-ai%2fdsh-host-plugin-inventory/0.2.2-rc.2",
+      "tarball": "https://registry.npmjs.org/@deepseek-ai/dsh-host-plugin-inventory/-/dsh-host-plugin-inventory-0.2.2-rc.2.tgz",
+      "integrity": "sha512-wLmZWUHW0UCHT6rx13OW427BOUVRY5DegjzWQW3VXH1PtLrdV1ywRSspqnu6SyULSsknPZdp1/jgSGusTbAiZg==",
+      "bytes": 19421,
+      "gitHead": null,
+      "repository": "packages/host/plugin-inventory"
+    }
+  ]
+}

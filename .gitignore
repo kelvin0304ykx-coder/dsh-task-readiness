@@ -1,9 +1,4 @@
 node_modules/
 lib/
 dist/
-artifacts/
-.test-runs/
-.worktrees/
-research/sdk-0.2.2-rc.2/
-research/live-catalog-observation.json
-.DS_Store
+research/sdk-extra/

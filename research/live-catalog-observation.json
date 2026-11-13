@@ -1,0 +1,14 @@
+{
+  "observedAt": "2026-11-13T04:35:12.293Z",
+  "source": "Current run_code SDK bindings supplied to this session",
+  "runtimeManifestVersion": "0.2.2-rc.2",
+  "observations": {
+    "webSearchDeclared": true,
+    "webFetchDeclared": true,
+    "readImageDeclared": true,
+    "officeRenderDeclared": false,
+    "officeConvertDeclared": false,
+    "officeRecalculateDeclared": false
+  },
+  "scope": "Declaration visibility only. No business tool executed for this observation. These facts are not connectivity, credentials, engine-health, or task-completion proof."
+}

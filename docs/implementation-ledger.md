@@ -21,3 +21,14 @@
 - 后续重点：人工批准必须来自宿主 Approval.request 的 allowed-once，不能仅凭 slash command 自动记录为 user 就视为审批；UI 入口首次挂载不发请求，精确检查通过普通会话触发。
 - 验证命令：捆绑 Node 执行 node_modules/typescript/bin/tsc --noEmit，以及 --test tests/*.test.ts。
 - 仍不授权新建替代 Web 服务器、生产部署、真实外部计费测试、发布或额外模型委派。
+
+## 2026-11-13 续：宿主层、探测、打包
+
+- Task 3 完成：宿主服务（检查 / 计划 / 执行 / 取消 / 复检 / 失效）与插件入口（readiness_check、readiness_probe、readiness_remedy，以及 /readiness、/readiness-list、/readiness-refresh）。新增服务层与入口层测试均先写后再实现，当前整套 129 项通过，严格类型检查通过。
+- Task 4 完成：最小探测执行器支持读取、写入、抓取、检索与三类 Office 动作；写入探测使用宿主文件服务的单次权限参数创建并立即删除唯一合成文件，清理失败记为结果待确认，不报成功。
+- Ruling: 没有真实探测的能力在生成计划阶段即拒绝（PROBE_UNSUPPORTED），不在执行阶段伪造成失败；“失败”只用于确实执行过且未通过的情况。
+- Task 5 的持久化部分完成：动作日志落到宿主 storage-domain 的单表，记录计划 id、会话、动作、绑定指纹与结果；存储缺失时诊断可用、动作一律拒绝（JOURNAL_UNAVAILABLE），不静默降级成无日志执行。
+- Task 6 部分完成：bundle 清单与 cordis.patch.yml（单个 insert 条目）、esbuild 构建（peer SDK 保持外部）、打包内容检查、pnpm pack 与解包后的隔离冒烟均通过。真实 profile 安装/重启/卸载仍未执行。
+- 打包期修正：域名必须匹配 /^[a-z][a-z0-9_]*$/，`task-readiness` 被宿主校验拒绝，改为 `task_readiness`（包名与插件名不变）。
+- 差异：图形界面客户端入口本轮未实现。客户端清单与产物格式已核对，但本会话没有 GUI 验收环境，无法验证挂载与交互；为避免把未验证客户端代码放进日常界面，改由下一阶段交付，需一次允许在真实界面验证的会话。
+- 仍未验证：真实 Host 安装与卸载、客户端挂载、Windows/Linux、真实搜索/抓取/Office/MCP/浏览器调用、Remote 跨会话负例。

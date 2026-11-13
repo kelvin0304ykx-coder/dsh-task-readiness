@@ -1,5 +1,6 @@
 import { randomBytes } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
+import { readFileSync } from 'node:fs';
 import type { ActionPlan, ExecutionOutcome } from '../core/actions.ts';
 import type { Capability, Report, TaskIntent } from '../core/types.ts';
 import type { CheckContext } from './service.ts';
@@ -74,9 +75,22 @@ function port<T>(host: HostContext | undefined, name: string): T | undefined {
 function decode(bytes: Uint8Array): string { return Buffer.from(bytes).toString('utf8'); }
 function hasPrefix(bytes: Uint8Array, prefix: string): boolean { return bytes.length >= prefix.length && decode(bytes.slice(0, prefix.length)) === prefix; }
 function isPng(bytes: Uint8Array): boolean { return PNG_MAGIC.every((value, index) => bytes[index] === value); }
+/**
+ * Package root resolved from this module's own location, so the same source works
+ * unbundled (src/host) and bundled (lib). No environment variable or cwd involved.
+ */
+function packageRoot(): URL {
+  let directory = new URL('.', import.meta.url);
+  for (let depth = 0; depth < 4; depth += 1) {
+    try {
+      readFileSync(new URL('package.json', directory));
+      return directory;
+    } catch { directory = new URL('../', directory); }
+  }
+  return new URL('../', import.meta.url);
+}
 async function defaultLoadAsset(name: 'docx' | 'xlsx'): Promise<Uint8Array> {
-  const url = new URL('../../assets/probe.' + name, import.meta.url);
-  return new Uint8Array(await readFile(url));
+  return new Uint8Array(await readFile(new URL('assets/probe.' + name, packageRoot())));
 }
 function assetSource(name: string, bytes: Uint8Array): OfficeSource {
   const version = PROBE_MARKER + ':' + name;

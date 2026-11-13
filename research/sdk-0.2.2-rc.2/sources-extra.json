@@ -1,0 +1,50 @@
+{
+  "retrievedAt": "2026-11-13T04:29:55.274Z",
+  "packages": [
+    {
+      "name": "@deepseek-ai/dsh-typert-protocol",
+      "version": "0.2.2-rc.2",
+      "metadataUrl": "https://registry.npmjs.org/@deepseek-ai%2fdsh-typert-protocol/0.2.2-rc.2",
+      "tarball": "https://registry.npmjs.org/@deepseek-ai/dsh-typert-protocol/-/dsh-typert-protocol-0.2.2-rc.2.tgz",
+      "integrity": "sha512-yluiJ1nIkZ4oAtEnknHCIi75mlT2/0Ov8+JGXYM7K9Bu2BoazR6Twv6HALh5yCMLEig9TW+NnUfzPRTUfm9tKw==",
+      "bytes": 67891,
+      "repository": "packages/typert/protocol"
+    },
+    {
+      "name": "@deepseek-ai/dsh-api-gateway",
+      "version": "0.2.2-rc.2",
+      "metadataUrl": "https://registry.npmjs.org/@deepseek-ai%2fdsh-api-gateway/0.2.2-rc.2",
+      "tarball": "https://registry.npmjs.org/@deepseek-ai/dsh-api-gateway/-/dsh-api-gateway-0.2.2-rc.2.tgz",
+      "integrity": "sha512-EFL/LCdK4bOddcPhDWBJJ6q8yC7C813Se862gynJviiS7DMDeDA3ZoMzGiO/oPwZ0p0pmy6DY5ryzHsLD6hg3Q==",
+      "bytes": 290775,
+      "repository": "packages/api/gateway"
+    },
+    {
+      "name": "@deepseek-ai/dsh-office-kit",
+      "version": "0.2.2-rc.2",
+      "metadataUrl": "https://registry.npmjs.org/@deepseek-ai%2fdsh-office-kit/0.2.2-rc.2",
+      "tarball": "https://registry.npmjs.org/@deepseek-ai/dsh-office-kit/-/dsh-office-kit-0.2.2-rc.2.tgz",
+      "integrity": "sha512-1gJrEnpQDsZOy2c3WMzHq/k4FatSiOfmiYv1sZ75sgHVrtMAWWLnudMRU/0eizdwdyfoDUa37x62rRWWLxbOAA==",
+      "bytes": 77294,
+      "repository": "packages/document/office-kit"
+    },
+    {
+      "name": "@deepseek-ai/dsh-tool-office",
+      "version": "0.2.2-rc.2",
+      "metadataUrl": "https://registry.npmjs.org/@deepseek-ai%2fdsh-tool-office/0.2.2-rc.2",
+      "tarball": "https://registry.npmjs.org/@deepseek-ai/dsh-tool-office/-/dsh-tool-office-0.2.2-rc.2.tgz",
+      "integrity": "sha512-fbvJd3goDjBGoDFCXbVM+7MG0yEKkUpMvtmb+tIGZ/GKwf914/aboyonV8EtI8GbyqIHwp5kSmTMLFpQtB5EBQ==",
+      "bytes": 37307,
+      "repository": "packages/document/tool-office"
+    },
+    {
+      "name": "@deepseek-ai/dsh-working-directory",
+      "version": "0.2.2-rc.2",
+      "metadataUrl": "https://registry.npmjs.org/@deepseek-ai%2fdsh-working-directory/0.2.2-rc.2",
+      "tarball": "https://registry.npmjs.org/@deepseek-ai/dsh-working-directory/-/dsh-working-directory-0.2.2-rc.2.tgz",
+      "integrity": "sha512-9u1x1G/RxnS64UgXwkGyd8FUASpiRz7wK+9wizYgCxGPifhPwEGHPQocxKTyMhFd8SUbKrd6+8SC183c2ufpAw==",
+      "bytes": 16377,
+      "repository": "packages/session/working-directory"
+    }
+  ]
+}

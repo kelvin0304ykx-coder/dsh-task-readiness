@@ -1,0 +1,5 @@
+# Task readiness checks. Inserts one plugin entry into the profile layer.
+# The entry mounts this package's own Cordis plugin (exports name/inject/apply).
+- insert:
+    - id: task-readiness
+      name: dsh-task-readiness
