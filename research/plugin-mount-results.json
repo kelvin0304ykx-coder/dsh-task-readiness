@@ -2,7 +2,7 @@
   "schema": "dsh-readiness-plugin-probe/v1",
   "sdkVersion": "0.2.2-rc.2",
   "runtime": "v24.21.0",
-  "generatedAt": "2026-11-13T10:08:35.557Z",
+  "generatedAt": "2026-11-13T10:09:04.577Z",
   "scope": "The built plugin mounted through real registry methods and the real JSON Schema validator with synthetic fixtures; no live Context, server or profile.",
   "passed": 9,
   "failed": 0,

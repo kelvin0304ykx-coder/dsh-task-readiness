@@ -56,3 +56,8 @@
 - 新增 research/plugin-mount-probe.mjs：把构建产物挂进真实 ToolsService 方法体，并用宿主自己的 JSON Schema 校验器检查参数与输出。9 项全部通过。
 - 该探针同时验证了“有准入/无准入”两种状态、计划惰性到审批执行再到复检、未支持能力在计划阶段拒绝，以及产物零非内置 import。
 - 探针不启动宿主、不读写 profile；真实启动挂载仍未验证。
+## 2026-11-13 续：真实 Cordis 上下文生命周期
+
+- 新增 tests/lifecycle.test.ts：用真实 Cordis 上下文（ctx.provide 提供合成服务）挂载插件，确认 3 个工具完成注册；fiber.dispose() 后本插件自有日志关闭恰好一次；无持久化存储的宿主也能挂载与卸载。
+- 未验证：宿主级工具撤销（真实 ToolsService 的注册生命周期）仍属部分验证，因为本地没有实例化真实 ToolsService 服务。
+- 当前测试 151 项通过。
