@@ -215,8 +215,10 @@ export function createTools(deps: ToolDeps): LocalToolDefinition[] {
         const context = contextOf(exec, steps);
         const files = Array.isArray(input.files) ? input.files : [];
         const output = typeof input.outputDirectory === 'string' ? { outputDirectory: input.outputDirectory } : {};
-        const intent = typeof input.template === 'string'
-          ? { ...templateIntent(input.template), files, ...output }
+        const useTemplate = typeof input.template === 'string';
+        if (useTemplate && (input.requirements !== undefined || input.routes !== undefined)) throw new ReadinessError('INVALID_INTENT', '模板已定义能力要求，不要再传 requirements 或 routes');
+        const intent = useTemplate
+          ? { ...templateIntent(input.template as string), files, ...output }
           : { version: 1, title: requiredString(input, 'title'), requirements: requiredRequirements(input), ...(input.routes === undefined ? {} : { routes: input.routes }), files, ...output };
         const report = await readiness.check(context, intent);
         return asJson({ ...modelReport(report), probeOptions: probeOptions(report), unresolvedActions: journal.list(context.agent.id).filter((row) => row.resultAt === undefined).length });

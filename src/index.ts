@@ -66,7 +66,8 @@ export async function apply(ctx: PluginContext): Promise<void> {
   const readiness = new ReadinessService({
     journal: journal.journal,
     probeSupport: supportsProbe,
-    timeoutMs: 30000,
+    /** A cold document engine can take tens of seconds; cancellation still works through the signal. */
+    timeoutMs: 60000,
     executeProbe: createProbeExecutor(),
     capture: async (intent, context, epoch) => {
       const route: ModelRoute | undefined = context.capturedStep?.modelSelection;

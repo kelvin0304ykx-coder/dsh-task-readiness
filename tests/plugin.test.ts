@@ -277,3 +277,10 @@ test('a remedy that would write outside the session boundary fails without chang
   const receipt = ran.receipt as Record<string, unknown>;
   assert.equal(receipt.code, 'NOT_SUPPORTED');
 });
+test('a template with conflicting explicit requirements is refused instead of silently merged', async () => {
+  const f = await ready();
+  await assert.rejects(f.check.execute({ template: 'images', requirements: [{ id: 'r', capability: 'web.search' }] }, execFor(f.agent, 'readiness_check')), { code: 'INVALID_INTENT' });
+  await assert.rejects(f.check.execute({ template: 'images', routes: [{ id: 'x', requires: ['step1'] }] }, execFor(f.agent, 'readiness_check')), { code: 'INVALID_INTENT' });
+  const ok = (await f.check.execute({ template: 'images', title: 'ignored but harmless', files: ['photo.png'] }, execFor(f.agent, 'readiness_check'))) as Record<string, unknown>;
+  assert.equal((ok.checks as Array<Record<string, unknown>>).length, 2);
+});

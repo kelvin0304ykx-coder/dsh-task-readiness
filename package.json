@@ -32,7 +32,8 @@
     "assets/*",
     "icon.svg",
     "cordis.patch.yml",
-    "README.md"
+    "README.md",
+    "CHANGELOG.md"
   ],
   "dsh": {
     "bundle": {
