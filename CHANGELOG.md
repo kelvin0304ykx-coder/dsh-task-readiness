@@ -4,7 +4,8 @@
 
 首个可发布版本，宿主基线 DSH 0.2.2-rc.2，MIT 许可证。
 
-- 已在独立 profile 完成安装、启动加载（插件页显示 1 运行中）与卸载。
+- 发布渠道：GitHub Release（https://github.com/kelvin0304ykx-coder/dsh-task-readiness/releases/tag/v0.1.0），公开匿名可下载。
+- 已在独立 profile 完成安装、启动加载（插件页显示 1 运行中）与卸载，并从公开 Release 匿名安装成功。
 - 其余内容同 0.1.0-preview.1。
 
 ## 0.1.0-preview.1（内部预览）

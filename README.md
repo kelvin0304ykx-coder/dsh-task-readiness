@@ -2,7 +2,7 @@
 
 开工前先确认“这个会话现在到底能不能做这件事”。面向普通用户，不替代宿主权限，也不把诊断通过当成任务质量或安全保证。
 
-当前版本：0.1.0，宿主基线 DSH 0.2.2-rc.2。许可证 MIT。已在独立 profile 完成安装、启动加载与卸载验证；尚未发布到公共仓库。
+当前版本：0.1.0，宿主基线 DSH 0.2.2-rc.2。许可证 MIT。仓库：<https://github.com/kelvin0304ykx-coder/dsh-task-readiness>。已完成独立 profile 的安装、启动加载与卸载验证，并从公开 Release 匿名安装成功。
 
 ## 它做什么
 
@@ -39,7 +39,18 @@
 
 没有自动探测的能力会显示“未知”与人工验证办法，不会伪装成不支持或已通过。
 
-## 安装（已在独立 profile 完成安装、启动加载与卸载）
+## 安装
+
+最快方式：直接用公开 Release 包（无需 npm 账号）。
+
+```sh
+dsh plugin --profile <你的 profile> add https://github.com/kelvin0304ykx-coder/dsh-task-readiness/releases/download/v0.1.0/dsh-task-readiness-0.1.0.tgz
+dsh --profile <你的 profile> --dump-config     # 应出现 id: task-readiness
+dsh --profile <你的 profile>                      # 启动后插件页显示“1 运行中”
+dsh plugin --profile <你的 profile> remove dsh-task-readiness
+```
+
+也可下载 [Release 资产](https://github.com/kelvin0304ykx-coder/dsh-task-readiness/releases/tag/v0.1.0) 后本地安装。
 
 本包是一个 Cordis bundle：`package.json` 的 `dsh.bundle.patch` 指向 `cordis.patch.yml`，补丁插入一个名为 `dsh-task-readiness` 的插件条目。```sh
 # 发布后（或本地 tarball）
@@ -62,6 +73,7 @@ dsh plugin --profile <你的 profile> remove dsh-task-readiness     # 卸载
 | 打包产物在隔离目录中的导入与运行 | 通过 |
 | 隔离 profile 安装、按包名加载、宿主组合校验、卸载 | 通过 |
 | 真实宿主加载（独立 DSH_HOME，插件页显示“1 运行中”） | 通过 |
+| 公开 Release 匿名安装（无 GitHub 登录） | 通过 |
 | 真实宿主中的模型回合与工具调用 | 未验证（隔离宿主无模型凭据） |
 | 真实 Cordis 上下文挂载 / 卸载 | 通过 |
 | 宿主 SDK 层探针（注册表 + JSON Schema 校验器） | 通过（9 项） |

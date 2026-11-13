@@ -85,3 +85,8 @@
 - 发布形态改为可上传：0.1.0、MIT、移除 private、LICENSE/CHANGELOG 随包、keywords 与 manifestVersion；打包检查同步要求非 private 与具体许可证。
 - 未执行 npm publish：需要发布账号与令牌，属对外动作，等用户确认。
 - 仍未验证：隔离 home 无模型凭据，未发起模型回合，也未在会话内实际调用三个工具。
+## 2026-11-13 晚：公开到 GitHub
+
+- 用户确认公开。仓库 kelvin0304ykx-coder/dsh-task-readiness 转 public，默认分支 main，话题 dsh-plugin / deepseek-harness / readiness，Release v0.1.0（资产 185 180 字节，sha256 98ea8874…）。
+- 匿名验证：清空 GitHub token 的环境下从 Release URL 安装，pnpm 只用该 https 包，安装目录只有 dsh-task-readiness 一个包；按包名加载冒烟通过；--dump-config 出现 id: task-readiness。
+- 已知暴露：提交作者邮箱为 gmail（未改写历史）；仓库历史包含核验用 SDK 原始 tarball（MIT，约 1.3 MB）。两项如需清理，公开后改写历史会改变哈希，另行确认。
