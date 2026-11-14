@@ -2,47 +2,47 @@
   "schema": "dsh-readiness-office-probe/v1",
   "sdkVersion": "0.2.2-rc.2",
   "runtime": "v24.21.0",
-  "generatedAt": "2026-11-13T10:09:55.091Z",
+  "generatedAt": "2026-11-14T13:26:11.592Z",
   "scope": "Real OfficeKit provider and prebuilt LibreOffice engine from the installed app; synthetic fixtures shipped with the plugin; throwaway output directory; no network or user documents.",
-  "outputDirectory": "/var/folders/2z/cx3_7v4j3cxdvjvfzgv132wh0000gn/T/dsh-office-probe-QToQ0A",
+  "outputDirectory": "/var/folders/2z/cx3_7v4j3cxdvjvfzgv132wh0000gn/T/dsh-office-probe-ce9yYS",
   "passed": 7,
   "failed": 0,
   "results": [
     {
       "name": "the real OfficeKit provider mounts on a Cordis context",
       "status": "passed",
-      "observation": "Provider mounted with an isolated output directory: /var/folders/2z/cx3_7v4j3cxdvjvfzgv132wh0000gn/T/dsh-office-probe-QToQ0A",
+      "observation": "Provider mounted with an isolated output directory: /var/folders/2z/cx3_7v4j3cxdvjvfzgv132wh0000gn/T/dsh-office-probe-ce9yYS",
       "ms": 1
     },
     {
       "name": "a synthetic docx converts to a real PDF",
       "status": "passed",
       "observation": "PDF bytes: 25664, missing fonts: []",
-      "ms": 4441
+      "ms": 2308
     },
     {
       "name": "the converted PDF renders a real PNG page",
       "status": "passed",
       "observation": "PNG 612x792, pageCount 1",
-      "ms": 494
+      "ms": 445
     },
     {
       "name": "a synthetic workbook recalculates",
       "status": "passed",
       "observation": "Workbook bytes: 6634, path present: true",
-      "ms": 816
+      "ms": 766
     },
     {
       "name": "the plugin adapter passes its own office.convert probe against the real engine",
       "status": "passed",
       "observation": "Outcome: {\"status\":\"succeeded\",\"code\":\"PROBE_PASSED\"}",
-      "ms": 1
+      "ms": 0
     },
     {
       "name": "the plugin adapter passes its own office.render probe against the real engine",
       "status": "passed",
       "observation": "Outcome: {\"status\":\"succeeded\",\"code\":\"PROBE_PASSED\"}",
-      "ms": 417
+      "ms": 444
     },
     {
       "name": "the plugin adapter passes its own office.recalculate probe against the real engine",

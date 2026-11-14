@@ -2,7 +2,7 @@
 
 开工前先确认“这个会话现在到底能不能做这件事”。面向普通用户，不替代宿主权限，也不把诊断通过当成任务质量或安全保证。
 
-当前版本：0.1.0，宿主基线 DSH 0.2.2-rc.2。许可证 MIT。仓库：<https://github.com/kelvin0304ykx-coder/dsh-task-readiness>。已完成独立 profile 的安装、启动加载与卸载验证，并从公开 Release 匿名安装成功。
+当前版本：0.1.1，兼容 DSH `>=0.2.2-rc.2 <0.3.0`（实测 rc.2 与 rc.3）。许可证 MIT。仓库：<https://github.com/kelvin0304ykx-coder/dsh-task-readiness>。已完成独立 profile 的安装、启动加载与卸载验证，并从公开 Release 匿名安装成功。
 
 ## 它做什么
 
@@ -41,7 +41,16 @@
 
 ## 安装
 
-最快方式：直接用公开 Release 包（无需 npm 账号）。
+**从 npm（推荐，输入包名即可）**：
+
+```sh
+dsh plugin --profile <你的 profile> add dsh-task-readiness
+dsh --profile <你的 profile> --dump-config     # 应出现 id: task-readiness
+dsh --profile <你的 profile>                      # 启动后插件页显示“1 运行中”
+dsh plugin --profile <你的 profile> remove dsh-task-readiness
+```
+
+**或直接装 GitHub Release 包（无需 npm 账号）**：
 
 ```sh
 dsh plugin --profile <你的 profile> add https://github.com/kelvin0304ykx-coder/dsh-task-readiness/releases/download/v0.1.0/dsh-task-readiness-0.1.0.tgz
@@ -50,7 +59,7 @@ dsh --profile <你的 profile>                      # 启动后插件页显示�
 dsh plugin --profile <你的 profile> remove dsh-task-readiness
 ```
 
-也可下载 [Release 资产](https://github.com/kelvin0304ykx-coder/dsh-task-readiness/releases/tag/v0.1.0) 后本地安装。
+Release 资产见 [v0.1.0](https://github.com/kelvin0304ykx-coder/dsh-task-readiness/releases/tag/v0.1.0)。
 
 本包是一个 Cordis bundle：`package.json` 的 `dsh.bundle.patch` 指向 `cordis.patch.yml`，补丁插入一个名为 `dsh-task-readiness` 的插件条目。```sh
 # 发布后（或本地 tarball）
@@ -71,6 +80,8 @@ dsh plugin --profile <你的 profile> remove dsh-task-readiness     # 卸载
 | 插件入口的 Host 形状测试（工具注册、审批、命令、事件） | 通过 |
 | 打包内容检查 | 通过 |
 | 打包产物在隔离目录中的导入与运行 | 通过 |
+| npm 发布（0.1.1，staged 审核后自动上线） | 通过 |
+| 从 npm 按包名安装 → 加载冒烟 | 通过 |
 | 隔离 profile 安装、按包名加载、宿主组合校验、卸载 | 通过 |
 | 真实宿主加载（独立 DSH_HOME，插件页显示“1 运行中”） | 通过 |
 | 公开 Release 匿名安装（无 GitHub 登录） | 通过 |

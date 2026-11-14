@@ -90,3 +90,9 @@
 - 用户确认公开。仓库 kelvin0304ykx-coder/dsh-task-readiness 转 public，默认分支 main，话题 dsh-plugin / deepseek-harness / readiness，Release v0.1.0（资产 185 180 字节，sha256 98ea8874…）。
 - 匿名验证：清空 GitHub token 的环境下从 Release URL 安装，pnpm 只用该 https 包，安装目录只有 dsh-task-readiness 一个包；按包名加载冒烟通过；--dump-config 出现 id: task-readiness。
 - 已知暴露：提交作者邮箱为 gmail（未改写历史）；仓库历史包含核验用 SDK 原始 tarball（MIT，约 1.3 MB）。两项如需清理，公开后改写历史会改变哈希，另行确认。
+## 2026-11-14：npm 发布与宿主升级适配
+
+- 用户开启 2FA 后，创建带 bypass 的 granular token 完成发布；首包触发 npm staged publishing（0.0.0-stage 占位 → 审核 → latest），两次发布令牌均已撤销。
+- 宿主 App 期间升级到 0.2.2-rc.3，原有 exact engines.dsh=0.2.2-rc.2 被宿主的兼容检查拒绝安装（日志明确写 incompatible）。改为 >=0.2.2-rc.2 <0.3.0 后 0.1.1 发布，按包名安装成功。
+- rc.3 上复验：tsc、153 项测试、SDK 探针 9/9、Office 探针 7/7、npm 安装后冒烟全通过。
+- 教训：精确固定宿主版本对社区插件是抗升级的陷阱；范围 + 实测矩阵更合适，README 需写明实测版本。

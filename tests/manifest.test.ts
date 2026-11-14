@@ -8,11 +8,11 @@ test('the package is publishable and declares an exact host baseline', () => {
   assert.equal(pkg.name, 'dsh-task-readiness');
   assert.equal(pkg.private, undefined);
   assert.equal(pkg.license, 'MIT');
-  assert.equal(pkg.version, '0.1.0');
+  assert.match(pkg.version, /^0\.1\.\d+$/);
   assert.equal(pkg.dsh.manifestVersion, 1);
   assert.ok(pkg.files.includes('LICENSE'));
   assert.ok(Array.isArray(pkg.keywords) && pkg.keywords.includes('dsh-plugin'));
-  assert.equal(pkg.engines.dsh, '0.2.2-rc.2');
+  assert.match(pkg.engines.dsh, />=\s*0\.2\.2-rc\.2/);
   assert.equal(pkg.type, 'module');
   assert.equal(pkg.main, './lib/index.js');
 });

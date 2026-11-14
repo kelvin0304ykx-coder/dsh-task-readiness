@@ -1,6 +1,6 @@
 {
   "name": "dsh-task-readiness",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "license": "MIT",
   "description": "Session-scoped task readiness checks: can this session really run this task? Self-contained bundle, no host package imports at runtime.",
   "type": "module",
@@ -14,7 +14,7 @@
   },
   "engines": {
     "node": ">=24",
-    "dsh": "0.2.2-rc.2"
+    "dsh": ">=0.2.2-rc.2 <0.3.0"
   },
   "scripts": {
     "test": "node --test tests/*.test.ts",
@@ -64,5 +64,17 @@
     "diagnostics",
     "office",
     "probe"
-  ]
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kelvin0304ykx-coder/dsh-task-readiness.git"
+  },
+  "homepage": "https://github.com/kelvin0304ykx-coder/dsh-task-readiness#readme",
+  "bugs": {
+    "url": "https://github.com/kelvin0304ykx-coder/dsh-task-readiness/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "author": "kelvin0304ykx-coder"
 }
